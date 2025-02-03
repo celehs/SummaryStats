@@ -1,0 +1,25 @@
+Package: SummaryStats
+Title: Summary Statistics And Quality Control
+Version: 1.0.0
+Authors@R: c(person("Thomas", "Charlon", role = c("aut", "cre"),
+                    email = "charlon@protonmail.com",
+                    comment = c(ORCID = "0000-0001-7497-0470")),
+             person("Enci", "Cai", role = "aut")),
+             person("CELEHS", role = "aut",
+                    comment = "<https://celehs.hms.harvard.edu>"))
+Description: Summary statistics and quality control
+Imports:
+    data.table,
+    dplyr,
+    magrittr
+Depends:
+    R (>= 3.5.0)
+Suggests:
+    knitr,
+    testthat
+VignetteBuilder: knitr
+License: GPL-3
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+URL: https://github.com/celehs/SummaryStats
+BugReports: https://github.com/celehs/SummaryStats/-/issues

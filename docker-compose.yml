@@ -1,0 +1,45 @@
+services:
+  manual:
+    build: ./
+    volumes:
+      - ./:/SummaryStats/
+    working_dir: /SummaryStats
+    command: make doc.pdf
+  vignette:
+    build: ./
+    volumes:
+      - ./:/SummaryStats/
+    working_dir: /SummaryStats
+    command: make vignette
+  build_doc:
+    build: ./
+    volumes:
+      - ./:/SummaryStats/
+    working_dir: /SummaryStats/
+    command: make roxygenise
+  pkg_test:
+    build: ./
+    volumes:
+      - ./:/SummaryStats/
+    working_dir: /SummaryStats/
+    command: make devtools_test
+  pkg_check:
+    build: ./
+    volumes:
+      - ./:/SummaryStats/
+    working_dir: /SummaryStats/
+    command: make
+  pkg_submit:
+    build: ./
+    volumes:
+      - ./:/SummaryStats/
+    working_dir: /SummaryStats/
+    command: make submit
+  shiny:
+    build: ./
+    user: shiny
+    command: /usr/bin/shiny-server /srv/shiny-server/shiny-server.conf 
+    ports:
+      - "3838:3838"
+    volumes:
+      - ./:/srv/
