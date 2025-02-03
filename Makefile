@@ -35,7 +35,7 @@ devtools_check:
 
 vignette:
 	#cd vignettes;\
-	#R -e "rmarkdown::render('pmi_svd.Rmd', output_format = 'all')"
+	#R -e "rmarkdown::render('summary_stats.Rmd', output_format = 'all')"
 
 clean:
 	$(RM) doc.pdf

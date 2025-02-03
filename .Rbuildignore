@@ -4,3 +4,5 @@ Dockerfile
 LICENSE
 Makefile
 README.md
+^doc$
+^Meta$

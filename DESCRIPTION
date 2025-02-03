@@ -4,18 +4,27 @@ Version: 1.0.0
 Authors@R: c(person("Thomas", "Charlon", role = c("aut", "cre"),
                     email = "charlon@protonmail.com",
                     comment = c(ORCID = "0000-0001-7497-0470")),
-             person("Enci", "Cai", role = "aut")),
+             person("Enci", "Cai", role = "aut"),
              person("CELEHS", role = "aut",
                     comment = "<https://celehs.hms.harvard.edu>"))
-Description: Summary statistics and quality control
+Description: This package aggregates data, provides summary statistics and visualizations. It can be suitable for quality control and explortary data analysis. 
 Imports:
     data.table,
     dplyr,
-    magrittr
+    ggplot2,
+    grid,
+    Matrix,
+    RSQLite,
+    scales,
+    stats,
+    stringr,
+    magrittr,
+    utils
 Depends:
     R (>= 3.5.0)
 Suggests:
     knitr,
+    rmarkdown,
     testthat
 VignetteBuilder: knitr
 License: GPL-3

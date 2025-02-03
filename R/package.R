@@ -1,4 +1,17 @@
-#' @importFrom data.table fread
+#' @importFrom data.table as.data.table dcast fread fwrite rbindlist :=
+#' @importFrom dplyr distinct filter group_by mutate pull select summarise n_distinct recode
+#' @importFrom ggplot2 aes geom_bar ggsave ggplot labs scale_fill_manual
+#'                    scale_y_continuous scale_y_log10 theme theme_minimal
+#'                    element_text element_rect unit
+#' @importFrom grid unit
+#' @importFrom Matrix sparseMatrix summary t
+#' @importFrom RSQLite dbClearResult dbConnect dbDisconnect dbExecute dbFetch
+#'                     dbGetQuery dbHasCompleted dbListTables dbSendQuery
+#'                     dbWriteTable SQLite dbExecute dbWriteTable
+#' @importFrom scales alpha comma hue_pal
+#' @importFrom stats na.omit reorder runif setNames var
+#' @importFrom stringr str_squish
+#' @importFrom utils capture.output head object.size tail
 NULL
 
 #' Pipe
