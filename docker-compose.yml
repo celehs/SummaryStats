@@ -24,7 +24,8 @@ services:
     working_dir: /SummaryStats/
     command: make devtools_test
   pkg_check:
-    build: ./
+    #build: ./
+    image: thomaschln/nlpembeds:latest
     volumes:
       - ./:/SummaryStats/
     working_dir: /SummaryStats/
