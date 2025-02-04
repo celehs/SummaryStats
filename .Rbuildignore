@@ -6,3 +6,5 @@ Makefile
 README.md
 ^doc$
 ^Meta$
+^.*\.Rproj$
+^\.Rproj\.user$
