@@ -61,7 +61,7 @@ map_items <- function(wanted_items_df, dictionary_mapping) {
     mapped_item <- dictionary_mapping %>%
       filter(
         Type == type & 
-          (Group_Description == group_description | Common_Ontology_Description == group_description)
+          (Group_Description == group_description)
       ) %>%
       select(Group_Code, Group_Description) %>%
       distinct()
@@ -260,6 +260,11 @@ create_summary_data <- function(combined_data, selected_items, count_type) {
       item_info <- selected_items[[code]]
       description <- item_info$Description
       code_number <- ifelse(grepl("NoCode:", code), description, sub(".*:", "", code))
+      
+      if (!is.na(description) && nchar(description) > 30) {
+        description <- paste0(substr(description, 1, 30), "[..]")
+      }
+      
       paste0(description, " (", code_number, ")")
     } else {
       code
