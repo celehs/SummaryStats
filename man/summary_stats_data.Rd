@@ -44,6 +44,5 @@ The first three datasets (`data_add`, `data_ccs`, `data_rxnorm`) contain the fol
 ```r
 data("summary_stats_data")
 head(data_rxnorm$Total_Counts)
-head(data_want$Patient_Counts)
 ```
 }

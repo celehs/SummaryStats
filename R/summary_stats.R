@@ -19,7 +19,6 @@ generate_intermediary_sqlite <- function(con, output_sqlite_path) {
     GROUP BY 
       Patient, Parent_Code
   "
-  
   # Execute the SQL query and save the results into an intermediary SQLite file
   aggregated_data <- dbGetQuery(con, sql_query)
   
@@ -50,34 +49,27 @@ extract_data_for_visualization <- function(sqlite_file, prefix, top_n = 20, addi
   con <- dbConnect(SQLite(), dbname = sqlite_file)
   
   if (!is.null(wanted_items_df)) {
-    # For 'want' selectlist
-    wanted_items_df$Name <- tolower(wanted_items_df$Name)
+    # 'want' case
     selected_items <- map_items(wanted_items_df, dictionary_mapping)
     combined_data <- fetch_data_for_items(con, selected_items, batch_size = 1000)
     code_summary <- create_summary_data(combined_data, selected_items, "Total_Count")
     patient_summary <- create_summary_data(combined_data, selected_items, "Patient_Count")
   } else if (!is.null(additional_vars)) {
-    # For 'add' selectlist
-    top_n_codes <- fetch_top_n_codes(con, prefix, batch_size = 1000, top_n = top_n)
-    code_summary <- process_additional_vars(con, top_n_codes, additional_vars, prefix, dict_prefix, dictionary_mapping, 1000, top_n)
-    patient_summary <- code_summary
+    # 'add' case
+    top_n_codes <- fetch_top_n_codes(con, prefix, batch_size = 1000, top_n)
+    code_summary <- process_additional_vars(con, top_n_codes$Total, additional_vars, prefix, prefix, dictionary_mapping, top_n)
+    patient_summary <- process_additional_vars(con, top_n_codes$Patient, additional_vars, prefix, prefix, dictionary_mapping, top_n)
   } else {
-    # For 'null' selectlist (default behavior)
+    # 'null' case
     top_n_codes <- fetch_top_n_codes(con, prefix, batch_size = 1000, top_n = top_n)
-    code_summary <- map_descriptions(top_n_codes, prefix, dictionary_mapping, dict_prefix)
-    patient_summary <- code_summary
+    code_summary <- map_descriptions(top_n_codes$Total, prefix, dictionary_mapping, dict_prefix)
+    patient_summary <- map_descriptions(top_n_codes$Patient, prefix, dictionary_mapping, dict_prefix)
   }
   
-  # Apply manual replacement bank, if provided
+  # Apply manual replacements if provided
   if (!is.null(manual_replacement_bank)) {
-    code_summary$Name <- recode(
-      code_summary$Name, 
-      !!!manual_replacement_bank
-    )
-    patient_summary$Name <- recode(
-      patient_summary$Name, 
-      !!!manual_replacement_bank
-    )
+    code_summary$Name <- recode(code_summary$Name, !!!manual_replacement_bank)
+    patient_summary$Name <- recode(patient_summary$Name, !!!manual_replacement_bank)
   }
   
   dbDisconnect(con)

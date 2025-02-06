@@ -5,41 +5,18 @@ assign_colors_to_categories <- function(categories) {
   return(color_palette)
 }
 
-# Helper function to map additional variables to Group Code and Description, with prefix handling
-map_additional_variables <- function(additional_vars, dictionary_mapping, prefix) {
-  mapped_items <- list()
-  
-  for (var_name in additional_vars) {
-    # Search for Group_Description in the dictionary
-    mapped_item <- dictionary_mapping %>%
-      filter(Group_Description == var_name & grepl(paste0("^", prefix), Group_Code)) %>%
-      select(Group_Code, Group_Description) %>%
-      distinct()
-    
-    if (nrow(mapped_item) > 0) {
-      group_code <- mapped_item$Group_Code[1]
-      cleaned_code <- sub(".*:", "", group_code)  # Remove prefix for cleaner display
-      label <- paste0(var_name, " (", cleaned_code, ")")
-      mapped_items[[var_name]] <- list(Group_Code = group_code, Name = label)
-    } else {
-      # Assign fallback for missing variables
-      mapped_items[[var_name]] <- list(Group_Code = NA, Name = var_name)
-    }
-  }
-  
-  return(mapped_items)
-}
-
 # Helper function to map descriptions and truncate names
 map_descriptions <- function(data, prefix, dictionary_mapping, dict_prefix) {
   # Extract mapping for Group_Code
   code_dict_group <- dictionary_mapping %>%
+    mutate(Group_Code = as.character(Group_Code)) %>%
     filter(grepl(paste0("^", dict_prefix), Group_Code)) %>%
     select(Group_Code, Group_Description)
   code_map_group <- setNames(code_dict_group$Group_Description, sub(dict_prefix, "", code_dict_group$Group_Code))
   
   # Extract mapping for Common_Ontology_Code
   code_dict_common <- dictionary_mapping %>%
+    mutate(Common_Ontology_Code = as.character(Common_Ontology_Code)) %>%
     filter(grepl(paste0("^", prefix), Common_Ontology_Code)) %>%
     select(Common_Ontology_Code, Group_Description)
   code_map_common <- setNames(code_dict_common$Group_Description, sub(prefix, "", code_dict_common$Common_Ontology_Code))
@@ -101,42 +78,38 @@ map_items <- function(wanted_items_df, dictionary_mapping) {
 
 # Helper function to fetch top N codes by Total_Count within a prefix
 fetch_top_n_codes <- function(con, prefix, batch_size, top_n) {
-  # Construct the query to fetch relevant rows
+  # Query to fetch all relevant data for the given prefix
   query <- sprintf("SELECT Patient, Parent_Code, Count FROM processed_data WHERE Parent_Code LIKE '%s%%'", prefix)
   
-  # Send the query
   res <- dbSendQuery(con, query)
-  
-  # Initialize variables for storing results
   all_patient_data <- list()
   
-  # Fetch data in batches
   while (!dbHasCompleted(res)) {
-    df_batch <- dbFetch(res, n = batch_size)  # Fetch `batch_size` rows
+    df_batch <- dbFetch(res, n = batch_size)
     if (nrow(df_batch) > 0) {
       dt_batch <- as.data.table(df_batch)
-      patient_counts <- dt_batch[, .(Count = sum(Count)), by = .(Patient, Parent_Code)]
-      all_patient_data <- append(all_patient_data, list(patient_counts))
+      all_patient_data <- append(all_patient_data, list(dt_batch))
     }
   }
   
-  # Clear the query result
   dbClearResult(res)
   
   # Combine all fetched batches
   combined_data <- rbindlist(all_patient_data, fill = TRUE)
   
-  # Aggregate Total_Count and Patient_Count by Parent_Code
+  # Ensure total counts and unique patient counts are computed correctly
   combined_data_grouped <- combined_data[, .(
-    Total_Count = sum(Count),
-    Patient_Count = length(unique(Patient))
+    Total_Count = sum(Count, na.rm = TRUE),
+    Patient_Count = uniqueN(Patient)  # Ensure unique patients are counted
   ), by = Parent_Code]
   
-  # Get top N codes by Total_Count
-  top_n_codes <- combined_data_grouped[order(-Total_Count)][1:top_n]
+  # Select top 20 separately for Total and Patient counts
+  top_n_by_total <- combined_data_grouped[order(-Total_Count)][1:top_n]
+  top_n_by_patient <- combined_data_grouped[order(-Patient_Count)][1:top_n]
   
-  return(top_n_codes)
+  return(list(Total = top_n_by_total, Patient = top_n_by_patient))
 }
+
 
 fetch_data_for_items <- function(con, selected_items, batch_size) {
   # Construct the query for fetching only the desired Parent_Code values
@@ -145,27 +118,23 @@ fetch_data_for_items <- function(con, selected_items, batch_size) {
     paste(names(selected_items), collapse = "', '"), "')"
   )
   
-  # Send the query
   res <- dbSendQuery(con, query)
   all_patient_data <- list()
   
-  # Fetch data in batches dynamically
   while (!dbHasCompleted(res)) {
-    df_batch <- dbFetch(res, n = batch_size)  # Fetch `batch_size` rows
+    df_batch <- dbFetch(res, n = batch_size)
     if (nrow(df_batch) > 0) {
       dt_batch <- as.data.table(df_batch)
-      patient_counts <- dt_batch[, .(Count = sum(Count)), by = .(Patient, Parent_Code)]
-      all_patient_data <- append(all_patient_data, list(patient_counts))
+      all_patient_data <- append(all_patient_data, list(dt_batch))
     }
   }
   
-  # Clear the query result
   dbClearResult(res)
   
   # Combine all fetched data
   combined_data <- rbindlist(all_patient_data, fill = TRUE)
   
-  # Add zero counts for items not found
+  # Ensure all selected items appear, even if missing from the fetched data
   for (code in names(selected_items)) {
     if (!code %in% combined_data$Parent_Code) {
       combined_data <- rbind(combined_data, data.table(Patient = NA, Parent_Code = code, Count = 0))
@@ -175,67 +144,95 @@ fetch_data_for_items <- function(con, selected_items, batch_size) {
   return(combined_data)
 }
 
-# Helper function to combine top N codes and additional variables data
-process_additional_vars <- function(con, top_n_codes, additional_vars, prefix, dict_prefix, dictionary_mapping, batch_size, top_n) {
-  # Fetch top N rows
+# Helper function to map additional variables to Group Code and Description, with prefix handling
+map_additional_variables <- function(additional_vars, dictionary_mapping, prefix) {
+  mapped_items <- list()
+  
+  for (var_name in additional_vars) {
+    # Search for Group_Description in the dictionary and get Group_Code
+    mapped_item <- dictionary_mapping %>%
+      filter(Group_Description == var_name & grepl(paste0("^", prefix), Group_Code)) %>%
+      select(Group_Code, Group_Description) %>%
+      distinct()
+    
+    if (nrow(mapped_item) > 0) {
+      group_code <- mapped_item$Group_Code[1]
+      cleaned_code <- sub(".*:", "", group_code)  # Remove prefix for cleaner display
+      label <- paste0(var_name, " (", cleaned_code, ")")
+      mapped_items[[var_name]] <- list(Group_Code = group_code, Name = label)
+    } else {
+      # Assign fallback for missing variables
+      mapped_items[[var_name]] <- list(Group_Code = NA, Name = var_name)
+    }
+  }
+  
+  return(mapped_items)
+}
+
+# Helper function to process additional variables and fetch their counts
+process_additional_vars <- function(con, top_n_codes, additional_vars, prefix, dict_prefix, dictionary_mapping, top_n) {
+  # Fetch top N rows and map descriptions
   top_n_rows <- map_descriptions(top_n_codes, prefix, dictionary_mapping, dict_prefix)
   
-  # Fetch additional variables and their mapped codes
+  # Fetch additional variables and their mapped Group Codes
   mapped_additional_vars <- map_additional_variables(additional_vars, dictionary_mapping, dict_prefix)
   
-  # Initialize a data.table to store results for additional variables
+  # Initialize a data.table to store additional variable results
   additional_rows <- rbindlist(
     lapply(names(mapped_additional_vars), function(var) {
       var_info <- mapped_additional_vars[[var]]
-      group_code <- var_info$Group_Code
+      group_code <- var_info$Group_Code  # Mapped Group Code
       
       if (!is.na(group_code)) {
-        # Get all corresponding Common_Ontology_Code for the Group_Description
+        # Find all Common_Ontology_Code values that match the Group_Description
         ontology_codes <- dictionary_mapping %>%
           filter(Group_Description == var & grepl(paste0("^", prefix), Common_Ontology_Code)) %>%
           pull(Common_Ontology_Code)
         
-        # Fetch matching rows from the dataset
         if (length(ontology_codes) > 0) {
+          # Query intermediary file to get Total_Count and Patient_Count
           query <- paste0(
             "SELECT Patient, Parent_Code, SUM(Count) AS Total_Count ",
             "FROM processed_data WHERE Parent_Code IN ('",
             paste(ontology_codes, collapse = "', '"),
             "') GROUP BY Patient, Parent_Code"
           )
+          
           matching_data <- dbGetQuery(con, query)
           
-          # Deduplicate patient counts
-          unique_patients <- matching_data %>%
-            group_by(Patient) %>%
-            summarise(Distinct_Patient = n_distinct(Patient))
-          
-          total_count <- sum(matching_data$Total_Count, na.rm = TRUE)
-          patient_count <- nrow(unique_patients)
-          
-          # Return the row
-          return(data.table(
-            Parent_Code = group_code,  # Use Group_Code as Parent_Code
-            Total_Count = total_count,
-            Patient_Count = patient_count,
-            Name = var_info$Name,  # Correctly formatted Name
-            Code = NA  # Leave Code column empty
-          ))
+          if (nrow(matching_data) > 0) {
+            # Get total counts by summing all appearances
+            total_count <- sum(matching_data$Total_Count, na.rm = TRUE)
+            
+            # Get unique patients by counting distinct patient occurrences
+            unique_patients <- matching_data %>%
+              group_by(Patient) %>%
+              summarise(Distinct_Patient = n_distinct(Patient))
+            
+            patient_count <- nrow(unique_patients)
+            
+            # Return the row with correct counts
+            return(data.table(
+              Parent_Code = group_code,  # Use Group_Code as Parent_Code
+              Total_Count = total_count,
+              Patient_Count = patient_count,
+              Name = var_info$Name  # Correctly formatted Name
+            ))
+          }
         }
       }
       
-      # Return a row with 0 counts if no match is found
+      # If no match found, return zero counts
       return(data.table(
         Parent_Code = group_code,
         Total_Count = 0,
-        Patient_Count = NA,
-        Name = var_info$Name,
-        Code = NA
+        Patient_Count = 0,
+        Name = var_info$Name
       ))
     }), fill = TRUE
   )
   
-  # Combine top N and additional variables
+  # Combine Top N rows with Additional Variables
   combined_data <- rbindlist(list(top_n_rows, additional_rows), use.names = TRUE, fill = TRUE)
   
   return(combined_data)
@@ -244,46 +241,34 @@ process_additional_vars <- function(con, top_n_codes, additional_vars, prefix, d
 # Helper function to create summary data for Total Count and Patient Count
 create_summary_data <- function(combined_data, selected_items, count_type) {
   if (count_type == "Total_Count") {
-    # Summarize total counts
+    # Summarize total counts per Parent_Code
     df_wide <- dcast(combined_data, Patient ~ Parent_Code, value.var = "Count", fun.aggregate = sum, fill = 0)
     code_totals <- colSums(df_wide[, -1, with = FALSE], na.rm = TRUE)
     
-    code_summary <- data.frame(Code = names(code_totals), Total_Count = code_totals)
-    code_summary$Name <- sapply(code_summary$Code, function(code) {
-      if (code %in% names(selected_items)) {
-        item_info <- selected_items[[code]]
-        description <- item_info$Description
-        code_number <- ifelse(grepl("NoCode:", code), description, sub(".*:", "", code))
-        paste0(description, " (", code_number, ")")
-      } else {
-        code
-      }
-    })
-    code_summary$Category <- sapply(code_summary$Code, function(code) {
-      if (code %in% names(selected_items)) {
-        selected_items[[code]]$Category
-      } else {
-        NA
-      }
-    })
+    code_summary <- data.frame(Parent_Code = names(code_totals), Total_Count = code_totals)
   } else if (count_type == "Patient_Count") {
-    # Summarize patient counts
-    combined_data[, Presence := 1]
-    df_binary <- dcast(combined_data, Patient ~ Parent_Code, value.var = "Presence", fun.aggregate = function(x) as.integer(length(x) > 0), fill = 0)
+    combined_data[, Presence := ifelse(Count > 0, 1, 0)]  
+    df_binary <- dcast(combined_data, Patient ~ Parent_Code, value.var = "Presence", 
+                       fun.aggregate = function(x) as.integer(sum(x) > 0), fill = 0)  
     patient_counts <- colSums(df_binary[, -1, with = FALSE], na.rm = TRUE)
-    
-    code_summary <- data.frame(Code = names(patient_counts), Patient_Count = patient_counts)
-    code_summary$Name <- sapply(code_summary$Code, function(code) {
-      if (code %in% names(selected_items)) {
-        item_info <- selected_items[[code]]
-        description <- item_info$Description
-        code_number <- ifelse(grepl("NoCode:", code), description, sub(".*:", "", code))
-        paste0(description, " (", code_number, ")")
-      } else {
-        code
-      }
-    })
-    code_summary$Category <- sapply(code_summary$Code, function(code) {
+    code_summary <- data.frame(Parent_Code = names(patient_counts), Patient_Count = patient_counts)
+  }
+  
+  # Assign correct Name values
+  code_summary$Name <- sapply(code_summary$Parent_Code, function(code) {
+    if (code %in% names(selected_items)) {
+      item_info <- selected_items[[code]]
+      description <- item_info$Description
+      code_number <- ifelse(grepl("NoCode:", code), description, sub(".*:", "", code))
+      paste0(description, " (", code_number, ")")
+    } else {
+      code
+    }
+  })
+  
+  # Assign correct category (if applicable)
+  if (!is.null(selected_items)) {
+    code_summary$Category <- sapply(code_summary$Parent_Code, function(code) {
       if (code %in% names(selected_items)) {
         selected_items[[code]]$Category
       } else {

@@ -35,6 +35,5 @@
 #' ```r
 #' data("summary_stats_data")
 #' head(data_rxnorm$Total_Counts)
-#' head(data_want$Patient_Counts)
 #' ```
 NULL

@@ -7,8 +7,8 @@ output:
   pdf_document: default
 vignette: >
   %\VignetteIndexEntry{Summary_Stats}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
 ---
 
 # Overview of the Summary Stats Function
@@ -191,7 +191,7 @@ data("summary_stats_data")
 * `dict_prefix = "RXNORM:"` is not shown as the prefix in dataset and dictionary is the same. If necessary, this argument indicates the prefix of the Parent_Code of our choice in the dictionary.
 * `description_label = "RXNORM Medications"` indicates the content to be placed in the title.
 * `data = data_rxnorm` indicates the data table that is ready to view
-* `count_column = "Patient_Count"` indicates that we only want to see the Patient Counts without Total Counts, vice versa. Without this argument will automatically return both plots. 
+* `count_column = "Patient_Counts"` indicates that we only want to see the Patient Counts without Total Counts, vice versa. Without this argument will automatically return both plots. 
 * `save_plots = FALSE` is default, indicating that we do not want to save the output plots to the `output_path`. If the plots need to be saved, simply add parameter `save_plots = TRUE`. 
 * `output_path = tempdir()` is default. If certain directory is specified, for example the current working directory, we can use ` "output_path = ./output"`.
   
@@ -227,7 +227,7 @@ plot_visualized_data(
 * `top_n` is not specified here, thus the function will automatically return with the default value of top 20 in additional to variables of interests.
 * `dict_prefix = "LOINC:"` is not shown as the prefix in dataset and dictionary is the same. If necessary, this argument indicates the prefix of the Parent_Code of our choice in the dictionary.
 * `description_label = "Lab Tests"` indicates the content to be placed in the title.
-* `data = data_add` with `count_column = "Total_Count"` returns the histogram of total counts.
+* `data = data_add` with `count_column = "Patient_Counts"` returns the histogram of Patient counts.
 
 ```{r,fig.width=16, fig.height=8,fig.pos='H'}
 if (FALSE) {
@@ -244,7 +244,7 @@ data_add <- extract_data_for_visualization(
 # Step 3
 plot_visualized_data(
   data = data_add,
-  count_column = "Total_Count",  
+  count_column = "Patient_Count",  
   prefix = "LOINC:",
   description_label = "Lab Tests"
 )
