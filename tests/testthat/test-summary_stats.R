@@ -1,18 +1,18 @@
 
 dictionary_mapping <- data.frame(
   Group_Code = c("RXNORM:123", "RXNORM:456"),
-  Common_Ontology_Code = c("ONT:001", "ONT:002"),
-  Group_Description = c("Description1", "Description2")
+  Common_Ontology_Code = c("RXNORM:001", "RXNORM:002"),
+  Common_Ontology_Description = c("Acetaminophen", "Ibuprofen"),
+  Group_Description = c("Pain Relievers", "NSAIDs")
 )
-
-assign("dictionary_mapping", dictionary_mapping, envir = .GlobalEnv)
 
 df_ehr <- data.frame(
-  Month = round(runif(1000, 1, 100)),
-  Patient = round(runif(1000, 1, 100)),
-  Parent_Code = c("RXNORM:123", "RXNORM:456", "RXNORM:789")[sample(3, 1000, replace = TRUE)],
-  Count = round(runif(1000, 1, 10))
+  Month = sample(1:12, 1000, replace = TRUE),
+  Patient = sample(1:500, 1000, replace = TRUE),
+  Parent_Code = sample(c("RXNORM:123", "RXNORM:456", "RXNORM:789"), 1000, replace = TRUE),
+  Count = sample(1:10, 1000, replace = TRUE)
 )
+
 
 test_db_path = tempfile()
 test_db = dbConnect(SQLite(), test_db_path)
@@ -28,8 +28,8 @@ dbDisconnect(interm_test_db)
 data_null <- extract_data_for_visualization(
   sqlite_file = intermediary_test_db_path,
   prefix = "RXNORM:",
-  top_n = 30,
-  dict_prefix = "RXNORM:"
+  top_n = 20,
+  dictionary_mapping = dictionary_mapping
 )
 
 data_null = lapply(data_null, na.omit)

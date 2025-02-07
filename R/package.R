@@ -1,4 +1,4 @@
-#' @importFrom data.table as.data.table dcast fread fwrite rbindlist uniqueN :=
+#' @importFrom data.table data.table as.data.table dcast fread fwrite rbindlist uniqueN :=
 #' @importFrom dplyr distinct filter group_by mutate pull select summarise n_distinct recode
 #' @importFrom ggplot2 aes geom_bar ggsave ggplot labs scale_fill_manual
 #'                    scale_y_continuous scale_y_log10 theme theme_minimal

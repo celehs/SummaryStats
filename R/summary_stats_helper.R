@@ -144,6 +144,7 @@ fetch_data_for_items <- function(con, selected_items, batch_size) {
   return(combined_data)
 }
 
+
 # Helper function to map additional variables to Group Code and Description, with prefix handling
 map_additional_variables <- function(additional_vars, dictionary_mapping, prefix) {
   mapped_items <- list()

@@ -11,7 +11,8 @@ extract_data_for_visualization(
   additional_vars = NULL,
   wanted_items_df = NULL,
   manual_replacement_bank = NULL,
-  dict_prefix = prefix
+  dict_prefix = prefix,
+  dictionary_mapping
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ extract_data_for_visualization(
 \item{manual_replacement_bank}{A named list for renaming specific codes (default = NULL).}
 
 \item{dict_prefix}{Dictionary prefix for mapping (default = `prefix`).}
+
+\item{dictionary_mapping}{the dictionary used to map codes}
 }
 \value{
 A list containing:

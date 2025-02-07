@@ -162,7 +162,8 @@ Here in the simulated dataset, we are going to show the most common scenario of 
 data_null <- extract_data_for_visualization(
   sqlite_file = intermediary_test_db_path,
   prefix = "RXNORM:",
-  top_n = 20
+  top_n = 20,
+  dictionary_mapping = dictionary_mapping
 )
 
 head(data_null$Patient_Counts, 3)
@@ -194,14 +195,16 @@ data("summary_stats_data")
 * `count_column = "Patient_Counts"` indicates that we only want to see the Patient Counts without Total Counts, vice versa. Without this argument will automatically return both plots. 
 * `save_plots = FALSE` is default, indicating that we do not want to save the output plots to the `output_path`. If the plots need to be saved, simply add parameter `save_plots = TRUE`. 
 * `output_path = tempdir()` is default. If certain directory is specified, for example the current working directory, we can use ` "output_path = ./output"`.
-  
+* `dictionary_mapping = dictionary_mapping` indicates the input of dictionary we used to map codes of our selection. Here the name of our dictionary dataframe is 'dictionary_mapping' as well.
 
 ```{r,fig.width=16, fig.height=8,fig.pos='H'}
 if (FALSE) {
   data_rxnorm <- extract_data_for_visualization(
     sqlite_file = "./RA_intermediary.sqlite",
     prefix = "RXNORM:",
-    top_n = 20
+    top_n = 20,
+    dictionary_mapping = dictionary_mapping
+
   )
 }
 
@@ -228,6 +231,7 @@ plot_visualized_data(
 * `dict_prefix = "LOINC:"` is not shown as the prefix in dataset and dictionary is the same. If necessary, this argument indicates the prefix of the Parent_Code of our choice in the dictionary.
 * `description_label = "Lab Tests"` indicates the content to be placed in the title.
 * `data = data_add` with `count_column = "Patient_Counts"` returns the histogram of Patient counts.
+* `dictionary_mapping = dictionary_mapping` indicates the input of dictionary we will use to map codes of our selection.Here the name of our dictionary dataframe is 'dictionary_mapping' as well.
 
 ```{r,fig.width=16, fig.height=8,fig.pos='H'}
 if (FALSE) {
@@ -237,6 +241,7 @@ additional_vars <- c("Erythrocyte sedimentation rate", "C reactive protein",
 data_add <- extract_data_for_visualization(
   sqlite_file = "./RA_intermediary.sqlite", 
   prefix = "LOINC:", 
+  dictionary_mapping = dictionary_mapping,
   additional_vars = additional_vars
  )
 }
@@ -256,6 +261,7 @@ plot_visualized_data(
 * `prefix = "CCS-PCS:"` indicates the prefix of the Parent_Code of our choice in the dataset is CCS-PCS:.
 * `dict_prefix = "CCS:"` is specified to indicating the prefix of the Parent_Code of our choice in the dictionary is CCS:. Note that the prefix in the dataset and dictionary is different, therefore we need to address the correct prefix for each.
 * `log_scale = TRUE` enables logarithmic scaling for the total count plot. By default, `log_scale = FALSE`
+* `dictionary_mapping = dictionary_mapping` indicates the input of dictionary we will use to map codes of our selection. Here the name of our dictionary dataframe is 'dictionary_mapping' as well.
 
 ```{r,fig.width=16, fig.height=8,fig.pos='H'}
 # Step 2
@@ -263,7 +269,8 @@ if (FALSE) {
 data_ccs <- extract_data_for_visualization(
   sqlite_file = "./RA_intermediary.sqlite", 
   prefix = "CCS-PCS:", 
-  top_n = 20,  
+  top_n = 20,
+  dictionary_mapping = dictionary_mapping,
   dict_prefix = "CCS:"  
  )
 }
@@ -286,6 +293,7 @@ plot_visualized_data(
 * `prefix = "RXNORM:"` indicates the prefix of the Parent_Code of our choice in the dataset is RXNORM:.
 * `dict_prefix = "RXNORM:"` is not shown as the prefix in dataset and dictionary is the same. If necessary, this argument indicates the prefix of the Parent_Code of our choice in the dictionary. 
 * `data = data_add` without `count_column = "Total_Count"` or `count_column = "Patient_Count"` returns both plots.
+* `dictionary_mapping = dictionary_mapping` indicates the input of dictionary we will use to map codes of our selection. Here the name of our dictionary dataframe is 'dictionary_mapping' as well.
 
 ```{r,fig.width=16, fig.height=8,fig.pos='H'}
 wanted_items <- data.frame(
@@ -309,6 +317,7 @@ if (FALSE) {
 data_want <- extract_data_for_visualization(
   sqlite_file = "./RA_intermediary.sqlite", 
   prefix = "RXNORM:", 
+  dictionary_mapping = dictionary_mapping,
   wanted_items_df = wanted_items
  )
 }

@@ -40,29 +40,30 @@ generate_intermediary_sqlite <- function(con, output_sqlite_path) {
 #' @param wanted_items_df A data frame of specific variables to extract (default = NULL).
 #' @param manual_replacement_bank A named list for renaming specific codes (default = NULL).
 #' @param dict_prefix Dictionary prefix for mapping (default = `prefix`).
+#' @param dictionary_mapping the dictionary used to map codes
 #'
 #' @return A list containing:
 #'   - `Total_Counts`: A summary of total occurrences for each medical code.
 #'   - `Patient_Counts`: The number of unique patients associated with each medical code.
 #' @export
-extract_data_for_visualization <- function(sqlite_file, prefix, top_n = 20, additional_vars = NULL, wanted_items_df = NULL, manual_replacement_bank = NULL, dict_prefix = prefix) {
+extract_data_for_visualization <- function(sqlite_file, prefix, top_n = 20, additional_vars = NULL, wanted_items_df = NULL, manual_replacement_bank = NULL, dict_prefix = prefix, dictionary_mapping) {
   con <- dbConnect(SQLite(), dbname = sqlite_file)
   
   if (!is.null(wanted_items_df)) {
     # 'want' case
-    selected_items <- map_items(wanted_items_df, dictionary_mapping)
+    selected_items <- map_items(wanted_items_df, dictionary_mapping)  # Explicitly pass dictionary_mapping
     combined_data <- fetch_data_for_items(con, selected_items, batch_size = 1000)
     code_summary <- create_summary_data(combined_data, selected_items, "Total_Count")
     patient_summary <- create_summary_data(combined_data, selected_items, "Patient_Count")
   } else if (!is.null(additional_vars)) {
     # 'add' case
     top_n_codes <- fetch_top_n_codes(con, prefix, batch_size = 1000, top_n)
-    code_summary <- process_additional_vars(con, top_n_codes$Total, additional_vars, prefix, prefix, dictionary_mapping, top_n)
+    code_summary <- process_additional_vars(con, top_n_codes$Total, additional_vars, prefix, prefix, dictionary_mapping, top_n)  # Pass dictionary_mapping
     patient_summary <- process_additional_vars(con, top_n_codes$Patient, additional_vars, prefix, prefix, dictionary_mapping, top_n)
   } else {
     # 'null' case
     top_n_codes <- fetch_top_n_codes(con, prefix, batch_size = 1000, top_n = top_n)
-    code_summary <- map_descriptions(top_n_codes$Total, prefix, dictionary_mapping, dict_prefix)
+    code_summary <- map_descriptions(top_n_codes$Total, prefix, dictionary_mapping, dict_prefix)  # Pass dictionary_mapping
     patient_summary <- map_descriptions(top_n_codes$Patient, prefix, dictionary_mapping, dict_prefix)
   }
   
@@ -76,6 +77,7 @@ extract_data_for_visualization <- function(sqlite_file, prefix, top_n = 20, addi
   
   return(list(Total_Counts = code_summary, Patient_Counts = patient_summary))
 }
+
 
 
 #' Plot Visualized Data
