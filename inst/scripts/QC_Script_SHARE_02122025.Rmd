@@ -1,0 +1,837 @@
+
+---
+title: "EHR Data QC Pipeline"
+date: "`r Sys.Date()`"
+---
+
+This script generates a set of tables and figures for EHR data QC. To run this script:
+
+You should have 2 datasets (NLP & codified) which contain at least the following variables:
+
+1. `patient_num` - character variable for patient ID
+2. `feature_id` - character variable for feature (code) ID
+3. `start_date` - date of each feature_id
+
+You should have a data dictionary which contains at least the following variables:
+
+1. `feature_id` - character variable for feature (code) ID
+2. `description` - text description of feature_id
+
+You should define the following in **Module 1** (the rest of the script should not be modified):
+
+1. Directory paths to dictionary, NLP and codified data
+2. `target_code` - PheCode of primary interest in your study
+3. `target_cui` - Corresponding CUI of primary interest in your study
+
+```{r libraries, include=FALSE}
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE)
+knitr::opts_chunk$set(fig.width = 14, fig.height = 6)
+
+# rm(list = ls())
+
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(gridExtra)
+library(ggtext)
+library(knitr)
+library(lubridate)
+library(cowplot)
+
+```
+
+## Module 0: Sample QC Data
+
+This optional module samples 1,000 unique patients from the intersection of the NLP and codified datasets for faster QC processing.  
+
+### Outputs
+
+1. Sampled NLP dataset to save for Module 1
+2. Sampled codified dataset to save for Module 1
+
+```{r module0, include=FALSE}
+
+# nlp_path <- "/n/data1/hsph/biostat/celehs/lab/SHARE/UPMC/MS/data_table/data_processed/UPMC_MS_2011_to_2021_NLP_processed_data_2023-10-21.csv"
+# codified_path <- "/n/data1/hsph/biostat/celehs/lab/SHARE/UPMC/MS/data_table/data_processed/UPMC_MS_2004_to_2022_Codified_processed_data_2023-08-25.csv"
+
+# nlp <- read.csv(nlp_path)
+# codified <- read.csv(codified_path)
+
+# set.seed(123) 
+# selected_patients <- sample(intersect(unique(nlp$patient_num), unique(codified$patient_num)), 1000)
+ 
+# nlp_sample <- nlp[nlp$patient_num %in% selected_patients, ]
+# codified_sample <- codified[codified$patient_num %in% selected_patients, ]
+
+## Save sampled nlp and codified data to upload in next step
+# write.csv(nlp_sample,file="/n/data1/hsph/biostat/celehs/lab/kimgreco/AI Paper/QC script/nlp_sample_1000.csv",row.names = FALSE)
+# write.csv(codified_sample,file="/n/data1/hsph/biostat/celehs/lab/kimgreco/AI Paper/QC script/codified_sample_1000.csv",row.names = FALSE)
+
+```
+
+## Module 1: Data and Dictionary Import & Preparation
+
+This module imports and prepares the NLP and codified datasets for analysis. It also imports two data dictionaries - a general data dictionary with feature descriptions and the ONCE dictionary for selecting similar features to the target PheCode.
+
+### Outputs
+
+1. Cleaned NLP and codified datasets
+2. Filtered data dictionary with target and common code feature descriptions
+3. ONCE dictionary with selected features
+
+```{r module1, cache=TRUE}
+
+# ----------------------- EDIT ----------------------- 
+
+# Provide directory paths to dictionary, nlp and codified data (csv)
+nlp_path <- "/n/data1/hsph/biostat/celehs/lab/kimgreco/AI Paper/QC script/nlp_sample_1000.csv"
+codified_path <- "/n/data1/hsph/biostat/celehs/lab/kimgreco/AI Paper/QC script/codified_sample_1000.csv"
+dictionary_path <- "/n/data1/hsph/biostat/celehs/lab/SHARE/UPMC/data_mapping/mapping_clean/UPMC_Codified_data_codebook_with_descriptions_2023-05-15.csv"
+
+# Provide target PheCode and CUI 
+target_code <- "PheCode:335"
+target_cui <- "C0026769"
+
+# ----------------------- DO NOT EDIT ----------------------- 
+
+# 1.a. Import nlp & codified data
+nlp <- read.csv(nlp_path)
+codified <- read.csv(codified_path)
+
+codified <- codified %>%
+  mutate(
+    patient_num = as.character(patient_num),  
+    year = format(as.Date(start_date), "%Y"),
+    feature_id = str_replace(feature_id, "CCS-PCS", "CCS")
+  )
+
+nlp <- nlp %>%
+  mutate(
+    patient_num = as.character(patient_num), 
+    year = format(as.Date(start_date), "%Y"),
+    feature_id = str_replace(feature_id, "CCS-PCS", "CCS")
+  )
+
+# 1.b. Data dictionary processing
+dictionary <- read.csv(dictionary_path)
+
+filtered_dictionary <- dictionary %>%
+  filter(
+    grepl(target_code, feature_id) |        
+    grepl(target_cui, feature_id) |         
+    grepl("^PheCode:250(\\.\\d+)?$", feature_id) | 
+    grepl("^PheCode:411(\\.\\d+)?$", feature_id) |  
+    grepl("^PheCode:296(\\.\\d+)?$", feature_id)  
+  ) %>%
+  dplyr::select(feature_id, description) %>%
+  distinct(feature_id, .keep_all = TRUE) %>%
+  mutate(description = case_when(
+    str_detect(description, "forms of") ~ str_replace(description, "(.*)forms of.*", "\\1forms"), 
+    TRUE ~ str_replace_all(description, "\\s*\\(.*?\\)|,.*", "")
+  )) %>%
+  mutate(description = tolower(description)) 
+
+# 1.c. ONCE dictionary processing
+
+# Dynamic O2 directory paths to ONCE dictionaries based on target_code
+formatted_code <- gsub(":", "", target_code)  
+formatted_code <- gsub("\\.", "_", formatted_code)  
+ONCE_path_code <- paste0("/n/data1/hsph/biostat/celehs/lab/sm731/ONCE_features/codified/", formatted_code, "_cod_features.csv")
+ONCE_path_nlp <- paste0("/n/data1/hsph/biostat/celehs/lab/sm731/ONCE_features/NLP/", formatted_code, "_nlp_features.csv")
+
+ONCE_dictionary_code <- read.csv(ONCE_path_code)
+ONCE_dictionary_nlp <- read.csv(ONCE_path_nlp)
+
+ONCE_dictionary_code <- ONCE_dictionary_code %>%
+  dplyr::select(Variable, Description, target_similarity) %>%
+  rename(feature_id = Variable, description = Description) %>%
+  mutate(description = tolower(description))
+
+ONCE_dictionary_nlp <- ONCE_dictionary_nlp %>%
+  dplyr::select(cui, term, target_similarity) %>%
+  rename(feature_id = cui, description = term) %>%
+  mutate(description = tolower(description))
+
+```
+
+## Module 2: Patient, Code, and Follow-up Summaries
+
+This module provides summary statistics for the NLP and codified datasets, including patient counts, the prevalence of the target PheCode and CUI, and duration of patient follow-up.
+
+### Outputs
+
+1. Patient counts over time
+2. Table of follow-up duration statistics
+
+```{r module2}
+
+# ----------------------- DO NOT EDIT ----------------------- 
+
+# 2.a. Total sample size (number of unique patients)
+total_sample_size <- data.frame(
+  Dataset = c("NLP", "Codified"),
+  "Number of Patients" = c(length(unique(nlp$patient_num)), length(unique(codified$patient_num))),
+  check.names = FALSE 
+)
+
+knitr::kable(total_sample_size, caption = "Total Sample Size")
+
+# 2.b. Total sample size BY YEAR
+sample_size_by_year <- list(
+  nlp = nlp %>%
+    group_by(year) %>%
+    summarise(total_patients = n_distinct(patient_num)),
+  codified = codified %>%
+    group_by(year) %>%
+    summarise(total_patients = n_distinct(patient_num))
+)
+
+# 2.c. Sample size with target disease
+patients_with_target_phecode <- unique(codified$patient_num[codified$feature_id == target_code])
+patients_with_target_cui <- unique(nlp$patient_num[nlp$feature_id == target_cui])
+
+patients_with_target <- data.frame(
+  Dataset = c("PheCode", "CUI"),
+  `Number of Patients` = c(length(patients_with_target_phecode), length(patients_with_target_cui)),
+  check.names = FALSE
+)
+
+knitr::kable(patients_with_target, caption = "Patients with Target Disease")
+
+# 2.d. Sample size with target disease BY YEAR
+sample_size_with_target_by_year <- list(
+  phecode = codified %>%
+    filter(feature_id == target_code) %>%
+    group_by(year) %>%
+    summarise(target_patients = n_distinct(patient_num)),
+  cui = nlp %>%
+    filter(feature_id == target_cui) %>%
+    group_by(year) %>%
+    summarise(target_patients = n_distinct(patient_num))
+)
+
+# Merge total sample size and target sample size data
+sample_size_by_year$nlp <- sample_size_by_year$nlp %>%
+  left_join(sample_size_with_target_by_year$cui, by = "year") %>%
+  rename(Year = year, `Total` = total_patients, `Target CUI` = target_patients) %>%
+  pivot_longer(cols = c(`Total`, `Target CUI`), names_to = "Type", values_to = "Patients")
+
+sample_size_by_year$codified <- sample_size_by_year$codified %>%
+  left_join(sample_size_with_target_by_year$phecode, by = "year") %>%
+  rename(Year = year, `Total` = total_patients, `Target PheCode` = target_patients) %>%
+  pivot_longer(cols = c(`Total`, `Target PheCode`), names_to = "Type", values_to = "Patients")
+
+# Compute total unique patients per dataset
+total_patients_nlp <- data.frame(
+  Feature = c("Total NLP Patients", "Patients with Target CUI"),
+  Total_Patients = c(length(unique(nlp$patient_num)), length(patients_with_target_cui))
+)
+
+total_patients_codified <- data.frame(
+  Feature = c("Total Codified Patients", "Patients with Target PheCode"),
+  Total_Patients = c(length(unique(codified$patient_num)), length(patients_with_target_phecode))
+)
+
+# Define theme with 10pt font for axis and legend
+custom_theme <- theme_minimal() +
+  theme(
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 10),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# Line plot for NLP data
+plot_nlp <- ggplot(sample_size_by_year$nlp, aes(x = Year, y = Patients, color = Type, group = Type)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Sample Size by Year (NLP)", x = "Year", y = "Number of Patients", color = "Sample") +
+  custom_theme
+
+# Line plot for Codified data
+plot_codified <- ggplot(sample_size_by_year$codified, aes(x = Year, y = Patients, color = Type, group = Type)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Sample Size by Year (Codified)", x = "Year", y = "Number of Patients", color = "Sample") +
+  custom_theme
+
+# Bar plot for NLP dataset (Total NLP patients vs. those with Target CUI)
+plot_bar_nlp <- ggplot(total_patients_nlp, aes(x = Feature, y = Total_Patients, fill = Feature)) +
+  geom_bar(stat = "identity") +
+  labs(y = "Total Patients") +
+  custom_theme +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),
+    legend.position = "none"
+  )
+
+# Bar plot for Codified dataset (Total Codified patients vs. those with Target PheCode)
+plot_bar_codified <- ggplot(total_patients_codified, aes(x = Feature, y = Total_Patients, fill = Feature)) +
+  geom_bar(stat = "identity") +
+  labs(y = "Total Patients") +
+  custom_theme +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),
+    legend.position = "none"
+  )
+
+# Extract legend from line plot
+legend_nlp <- cowplot::get_legend(plot_nlp)
+legend_codified <- cowplot::get_legend(plot_codified)
+
+# Arrange the plots (Line Plot | Bar Plot | Legend)
+combined_plot_nlp <- cowplot::plot_grid(
+  plot_nlp + theme(legend.position = "none"), 
+  plot_bar_nlp, 
+  legend_nlp, 
+  ncol = 3, rel_widths = c(3, 2, 1)
+)
+
+combined_plot_codified <- cowplot::plot_grid(
+  plot_codified + theme(legend.position = "none"), 
+  plot_bar_codified, 
+  legend_codified, 
+  ncol = 3, rel_widths = c(3, 2, 1)
+)
+
+# Display both plots
+print(combined_plot_nlp)
+print(combined_plot_codified)
+
+
+```
+
+```{r followup, include=FALSE, eval=FALSE}
+
+# 3.e. Follow-up period statistics
+nlp_follow_up <- nlp %>%
+  group_by(patient_num) %>%
+  summarise(
+    first_date = min(as.Date(start_date, format = "%Y-%m-%d")),
+    last_date = max(as.Date(start_date, format = "%Y-%m-%d")),
+    follow_up_years = as.numeric(difftime(last_date, first_date, units = "days")) / 365.25) %>%
+  mutate(
+    first_date = format(first_date, "%b %Y"),
+    last_date = format(last_date, "%b %Y"))
+ 
+codified_follow_up <- codified %>%
+  group_by(patient_num) %>%
+  summarise(
+    first_date = min(as.Date(start_date, format = "%Y-%m-%d")),
+    last_date = max(as.Date(start_date, format = "%Y-%m-%d")),
+    follow_up_years = as.numeric(difftime(last_date, first_date, units = "days")) / 365.25) %>%
+  mutate(
+    first_date = format(first_date, "%b %Y"),
+    last_date = format(last_date, "%b %Y"))
+
+nlp_stats <- nlp_follow_up %>%
+  summarise(
+    mean_follow_up = round(mean(follow_up_years),2),
+    median_follow_up = round(median(follow_up_years),2),
+    min_follow_up = round(min(follow_up_years),2),
+    max_follow_up = round(max(follow_up_years),2),
+    first_overall_date = min(first_date),
+    last_overall_date = max(last_date)
+  )
+
+codified_stats <- codified_follow_up %>%
+  summarise(
+    mean_follow_up = round(mean(follow_up_years),2),
+    median_follow_up = round(median(follow_up_years),2),
+    min_follow_up = round(min(follow_up_years),2),
+    max_follow_up = round(max(follow_up_years),2),
+    first_overall_date = min(first_date),
+    last_overall_date = max(last_date)
+  )
+
+nlp_stats_df <- nlp_stats %>%
+  rename(`Mean Follow-up (Years)` = mean_follow_up,
+         `Median Follow-up (Years)` = median_follow_up,
+         `Min Follow-up (Years)` = min_follow_up,
+         `Max Follow-up (Years)` = max_follow_up,
+         `First Code Date` = first_overall_date,
+         `Last Code Date` = last_overall_date)
+
+codified_stats_df <- codified_stats %>%
+  rename(`Mean Follow-up (Years)` = mean_follow_up,
+         `Median Follow-up (Years)` = median_follow_up,
+         `Min Follow-up (Years)` = min_follow_up,
+         `Max Follow-up (Years)` = max_follow_up,
+         `First Code Date` = first_overall_date,
+         `Last Code Date` = last_overall_date)
+
+knitr::kable(nlp_stats_df, caption = "NLP Follow-up Statistics")
+knitr::kable(codified_stats_df, caption = "Codified Follow-up Statistics")
+
+```
+
+## Module 3: Common PheCode Trends (Parent-Child Correlation)
+
+This module examines hierarchical relationships between PheCodes, tracking trends over time for parent and child PheCodes. It calculates annual rates and patient counts for each PheCode level.
+
+### Outputs
+
+1. Plot of rates over time for 3 common PheCodes
+2. Plot of patient counts over time for 3 common PheCodes
+
+```{r module3}
+
+# ----------------------- DO NOT EDIT -----------------------
+
+# Generate data summaries
+phecode_summary <- codified %>%
+  group_by(year, feature_id) %>%
+  summarise(Count = n(), Patients = n_distinct(patient_num), .groups = "drop") %>%
+  arrange(year, feature_id)
+
+total_patients_per_year <- codified %>%
+  group_by(year) %>%
+  summarise(Total_Patients = n_distinct(patient_num), .groups = "drop")
+
+phecode_summary <- phecode_summary %>%
+  left_join(total_patients_per_year, by = "year") %>%
+  mutate(Rate = Patients / Total_Patients)
+
+# Function to extract numerical part of feature_id for sorting
+extract_numeric_part <- function(feature_id) {
+  as.numeric(gsub("PheCode:", "", feature_id))
+}
+
+# Function to get description for a given PheCode
+get_phecode_description <- function(phecode_pattern, dictionary) {
+  phecode_pattern <- str_replace(phecode_pattern, "^PheCode:", "")
+  description <- dictionary %>%
+    filter(feature_id == paste0("PheCode:", phecode_pattern)) %>%
+    pull(description)
+  
+  if (length(description) == 0) {
+    return("description not found")  
+  } else {
+    return(description)
+  }
+}
+
+# Function to get descriptions for legend labels, ordered numerically
+add_description_to_legend <- function(phecode_pattern, dictionary) {
+  phecode_pattern <- str_replace(phecode_pattern, "^PheCode:", "")
+  dictionary %>%
+    filter(str_detect(feature_id, paste0("^PheCode:", phecode_pattern)) & 
+           !str_detect(feature_id, "\\.\\d{2,}")) %>%
+    mutate(num_part = extract_numeric_part(feature_id)) %>%  # Extract numeric part
+    arrange(num_part) %>%  # Order numerically
+    mutate(feature_id = paste0(feature_id, " | ", description)) %>%
+    dplyr::select(feature_id)
+}
+
+# 3.a. Function to plot rate for a PheCode parent-child pair
+plot_rate <- function(phecode_pattern, dictionary) {
+  phecode_description <- get_phecode_description(phecode_pattern, dictionary)
+  legend_labels <- add_description_to_legend(phecode_pattern, dictionary)
+
+  ggplot(phecode_summary %>%
+           filter(str_detect(feature_id, paste0("^PheCode:", phecode_pattern)) & 
+                  !str_detect(feature_id, "\\.\\d{2,}")),
+         aes(x = year, y = Rate, color = feature_id, group = feature_id)) +
+    geom_line() +
+    geom_point() +
+    labs(
+      title = "Rates for Parent-Child PheCodes",
+      subtitle = paste0("<b><i> PheCode: ", phecode_pattern, "</i></b> | <i>", phecode_description, "</i>"), 
+      x = "Year",
+      y = "Rate",
+      color = "Code"
+    ) +
+    scale_color_discrete(labels = legend_labels$feature_id) +  
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.subtitle = element_textbox_simple(size = 10, lineheight = 1.2),  
+      legend.text = element_text(size = 10), 
+      legend.title = element_text(size = 10)  
+    )
+}
+
+# 3.b. Function to plot patient counts for PheCode parent-child pair
+plot_count <- function(phecode_pattern, dictionary) {
+  phecode_description <- get_phecode_description(phecode_pattern, dictionary)
+  legend_labels <- add_description_to_legend(phecode_pattern, dictionary)
+
+  ggplot(phecode_summary %>%
+           filter(str_detect(feature_id, paste0("^PheCode:", phecode_pattern)) & 
+                  !str_detect(feature_id, "\\.\\d{2,}")),
+         aes(x = year, y = Patients, color = feature_id, group = feature_id)) +
+    geom_line() +
+    geom_point() +
+    geom_line(
+      data = total_patients_per_year,
+      aes(x = year, y = Total_Patients, group = 1),
+      linetype = "dotted",
+      color = "black"
+    ) +
+    labs(
+      title = "Patient Counts for Parent-Child PheCodes",
+      subtitle = paste0("<b><i> PheCode: ", phecode_pattern, "</i></b> | <i>", phecode_description, "</i>"), 
+      x = "Year",
+      y = "Patients",
+      color = "Code"
+    ) +
+    scale_color_discrete(labels = legend_labels$feature_id) +  
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.subtitle = element_textbox_simple(size = 10, lineheight = 1.2),  
+      legend.text = element_text(size = 10),  
+      legend.title = element_text(size = 10)  
+    )
+}
+
+rate_411 <- plot_rate("411", filtered_dictionary) 
+count_411 <- plot_count("411", filtered_dictionary) 
+
+rate_250 <- plot_rate("250", filtered_dictionary) 
+count_250 <- plot_count("250", filtered_dictionary) 
+
+rate_296 <- plot_rate("296", filtered_dictionary) 
+count_296 <- plot_count("296", filtered_dictionary) 
+
+print(rate_411)
+print(count_411)
+print(rate_250)
+print(count_250)
+print(rate_296)
+print(count_296)
+
+```
+
+*Notes: (1) Rates are calculated as the number of patients with the target PheCode per calendar year divided by the total number of patients with any code in the same year; (2) Black dotted lines represent total patient counts per calendar year (denominator of rate).*
+
+## Module 4: Target PheCode-CUI Trends
+
+This module analyzes the relationship between a target PheCode and CUI by calculating annual rates, patient counts, and intra-patient correlation.
+
+### Outputs
+
+1. Plot of rates over time for target PheCode-CUI pair
+2. Plot of patient counts over time for target PheCode-CUI pair
+3. Plot of intra-patient correlation over time for target PheCode-CUI pair
+
+```{r module4}
+
+# ----------------------- DO NOT EDIT ----------------------- 
+
+# Generate data summaries
+nlp_target <- nlp[nlp$feature_id == target_cui,]
+codified_nlp_target <- rbind(codified,nlp_target)
+
+phecode_cui_wide <- codified_nlp_target %>%
+  group_by(year, patient_num, feature_id) %>%
+  summarise(Code_Count = n(), .groups = "drop") %>%
+  pivot_wider(
+    names_from = feature_id,
+    values_from = Code_Count,
+    values_fill = 0
+  )
+
+target_phecode_summary <- codified %>%
+  filter(str_detect(feature_id, target_code)) %>%
+  group_by(year) %>%
+  summarise(
+    PheCode_Patients = n_distinct(patient_num),
+    .groups = "drop"
+  )
+
+target_cui_summary <- nlp %>%
+  filter(str_detect(feature_id, target_cui)) %>%
+  group_by(year) %>%
+  summarise(
+    CUI_Patients = n_distinct(patient_num),
+    .groups = "drop"
+  )
+
+target_total_patients <- codified_nlp_target %>%
+  group_by(year) %>%
+  summarise(Total_Patients = n_distinct(patient_num), .groups = "drop")
+
+target_combined <- target_phecode_summary %>%
+  left_join(target_cui_summary, by = "year") %>%
+  left_join(target_total_patients, by = "year") %>%
+  mutate(
+    PheCode_Rate = PheCode_Patients / Total_Patients,
+    CUI_Rate = CUI_Patients / Total_Patients
+  )
+
+# Extract descriptions from dictionary
+phecode_description <- get_phecode_description(target_code, filtered_dictionary)
+
+cui_description <- ONCE_dictionary_nlp %>%
+  filter(feature_id == target_cui) %>%
+  pull(description)
+cui_description <- ifelse(length(cui_description) > 0, cui_description, "description not found")
+
+# 4.a. Plot rate for target PheCode-CUI pair
+plot_rates_target <- ggplot(target_combined, aes(x = as.numeric(year))) +
+  geom_line(aes(y = PheCode_Rate, color = "Target PheCode", group = 1)) +
+  geom_line(aes(y = CUI_Rate, color = "Target CUI", group = 2)) +
+  geom_point(aes(y = PheCode_Rate, color = "Target PheCode")) +
+  geom_point(aes(y = CUI_Rate, color = "Target CUI")) +
+  labs(
+    title = paste("Rates for Target Codes"),
+    subtitle = paste0("<i><b>Target PheCode:</b> <i>", target_code, "</i> | <i>", phecode_description, 
+                       "<br><b>Target CUI:</b> ", target_cui, "</i> | <i>", cui_description, "</i>"),
+    x = "Year",
+    y = "Rate",
+    color = "Code"
+  ) +
+  theme_minimal() +
+  theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.subtitle = element_textbox_simple(size = 10, lineheight = 1.2),  
+      legend.text = element_text(size = 10),  
+      legend.title = element_text(size = 10)  
+    ) +
+  scale_x_continuous(breaks = unique(as.numeric(target_combined$year))) 
+
+# 4.b. Plot patient counts for target PheCode-CUI pair
+plot_counts_target <- ggplot(target_combined, aes(x = as.numeric(year))) +
+  geom_line(aes(y = PheCode_Patients, color = "Target PheCode", group = 1)) +
+  geom_line(aes(y = CUI_Patients, color = "Target CUI", group = 2)) +
+  geom_point(aes(y = PheCode_Patients, color = "Target PheCode")) +
+  geom_point(aes(y = CUI_Patients, color = "Target CUI")) +
+  geom_line(
+    aes(y = Total_Patients, group = 3),
+    linetype = "dotted",
+    color = "black"
+  ) +  
+  labs(
+    title = paste("Patient Counts for Target Codes"),
+    subtitle = paste0("<i><b>Target PheCode:</b> <i>", target_code, "</i> | <i>", phecode_description, 
+                       "<br><b>Target CUI:</b> ", target_cui, "</i> | <i>", cui_description, "</i>"),
+    x = "Year",
+    y = "Patients",
+    color = "Code"
+  ) +
+  theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.subtitle = element_textbox_simple(size = 10, lineheight = 1.2),  
+      legend.text = element_text(size = 10),  
+      legend.title = element_text(size = 10)  
+    ) +
+  scale_x_continuous(breaks = unique(as.numeric(target_combined$year))) 
+
+# 4.c. Function to plot correlation for target PheCode-CUI pair
+corr_target <- function(target_code, target_cui) {
+  
+  # Check if relevant columns exist
+  if (!target_code %in% colnames(phecode_cui_wide) || !target_cui %in% colnames(phecode_cui_wide)) {
+    stop(paste("Not enough data for Target Code:", target_code, "or Target CUI:", target_cui))
+  }
+  
+  # Calculate correlations by year
+  correlation_by_year <- phecode_cui_wide %>%
+    group_by(year) %>%
+    summarise(
+      Correlation = {
+        # Get data for the current year
+        data_for_year <- pick(everything())
+        
+        # Check for zero standard deviation
+        if (sd(data_for_year[[target_code]], na.rm = TRUE) == 0 ||
+            sd(data_for_year[[target_cui]], na.rm = TRUE) == 0) {
+          NA  
+        } else {
+          cor(data_for_year[[target_code]], data_for_year[[target_cui]], use = "pairwise.complete.obs", method = "spearman")
+        }
+      },
+      .groups = "drop"
+    ) %>%
+    filter(!is.na(Correlation))  # Remove rows with NA correlations
+  
+  # Plot correlations
+  ggplot(correlation_by_year, aes(x = as.numeric(year), y = Correlation)) +
+    geom_line(color = "cornflowerblue") +
+    geom_point(color = "cornflowerblue") +
+    labs(
+      title = "Intra-Patient Correlation for Target Codes",
+      subtitle = paste0("<i><b>Target PheCode:</b> <i>", target_code, "</i> | <i>", phecode_description, 
+                        "<br><b>Target CUI:</b> ", target_cui, "</i> | <i>", cui_description, "</i>"),
+      x = "Year",
+      y = "Correlation"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.subtitle = element_textbox_simple(size = 10, lineheight = 1.2),  
+      legend.text = element_text(size = 10),  
+      legend.title = element_text(size = 10)  
+    ) +
+  scale_x_continuous(breaks = unique(as.numeric(target_combined$year))) 
+}
+
+plot_corr_target <- corr_target(target_code, target_cui)
+
+plot_rates_target
+plot_counts_target
+plot_corr_target
+
+```
+
+*Notes: (1) Rates are calculated as the number of patients with the target code per calendar year divided by the total number of patients with any code in the same year; (2) Intra-patient correlations are calculated as the Spearman correlation between the code counts for patients in the same year; (3) Black dotted lines represent total patient counts per calendar year (denominator of rate).*
+
+## Module 5: ONCE Feature Trends (Diagnoses, Medications, Labs, Procedures)
+
+This module identifies the top five related codes in four code categories (diagnosis, medication, lab, procedure) based on ONCE feature similarity and tracks their trends over time. It calculates annual rates, patient counts, and their relationship to the target code. 
+
+### Outputs
+
+1. Plot of rates over time for related features
+2. Plot of patient counts over time for related features
+
+```{r module5, message=FALSE}
+
+# ----------------------- DO NOT EDIT ----------------------- 
+
+# Function to extract top 5 variables for each category, ordered by target similarity
+get_top_related_codes <- function(keyword, target_code) {
+  ONCE_dictionary_code %>%
+    filter(str_detect(feature_id, keyword) & feature_id != target_code) %>%
+    filter(feature_id %in% codified$feature_id) %>%  
+    arrange(desc(target_similarity)) %>%
+    head(5)
+}
+
+# Function to extract top 5 CUIs, ordered by target similarity
+get_top_related_cuis <- function(target_cui) {
+  ONCE_dictionary_nlp %>%
+    filter(feature_id != target_cui) %>%
+    filter(feature_id %in% nlp$feature_id) %>%  
+    arrange(desc(target_similarity)) %>%
+    head(5)
+}
+
+# Function to generate plots for related codes and CUIs
+plot_related_code_trends <- function(Type, target_code, target_cui) {
+  type_dict <- list(
+    "Diagnosis" = "PheCode",
+    "Medication" = "RXNORM",
+    "Lab" = "LOINC",
+    "Procedure" = "CCS"
+  )
+  
+  if (!(Type %in% c(names(type_dict), "CUI"))) return(list(NULL, paste("Invalid Type:", Type)))
+
+  related_codes <- if (Type == "CUI") get_top_related_cuis(target_cui) else get_top_related_codes(type_dict[[Type]], target_code)
+
+  if (nrow(related_codes) == 0) {
+    return(list(NULL, paste("No data corresponding to related **", Type, " Codes** from ONCE dictionary.", sep = "")))
+  }
+
+  selected_vars <- c(if (Type == "CUI") target_cui else target_code, related_codes$feature_id)
+
+  related_data <- if (Type == "CUI") nlp else codified
+  related_data <- related_data %>%
+    filter(feature_id %in% selected_vars) %>%
+    group_by(year, feature_id) %>%
+    summarise(Patients = n_distinct(patient_num), .groups = "drop")
+
+  total_patients <- codified %>%
+    group_by(year) %>%
+    summarise(Total_Patients = n_distinct(patient_num), .groups = "drop")
+
+  combined_data <- related_data %>%
+    left_join(total_patients, by = "year") %>%
+    mutate(Rate = Patients / Total_Patients)
+
+  descriptions <- if (Type == "CUI") ONCE_dictionary_nlp else ONCE_dictionary_code
+  descriptions <- descriptions %>%
+    filter(feature_id %in% selected_vars) %>%
+    dplyr::select(feature_id, description, target_similarity) %>%
+    arrange(desc(target_similarity))
+
+  combined_data <- combined_data %>%
+    left_join(descriptions, by = "feature_id") %>%
+    mutate(description_label = paste0(feature_id, " | ", description, " [", round(target_similarity, 3), "]"))
+
+  target_description <- descriptions$description[descriptions$feature_id == (if (Type == "CUI") target_cui else target_code)]
+  target_description <- ifelse(length(target_description) > 0, target_description, "No Description Available")
+  subtitle_text <- paste0("<i><b>Target ", Type, ":</b> ", if (Type == "CUI") target_cui else target_code, "</i> | <i>", target_description, "</i>")
+
+  if (all(combined_data$feature_id == (if (Type == "CUI") target_cui else target_code))) {
+    return(list(NULL, paste("No data on related *", Type, " Codes* in sample.", sep = "")))
+  }
+
+  plot_theme <- theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, size = 10, hjust = 1),
+      plot.subtitle = element_textbox_simple(size = 10, lineheight = 1.2),  
+      legend.text = element_text(size = 10),  
+      legend.title = element_text(size = 10)
+    )
+
+  plot_rates <- ggplot(combined_data, aes(x = as.numeric(year), y = Rate, color = reorder(description_label, -target_similarity), group = feature_id)) +
+    geom_line(data = combined_data %>% filter(feature_id == (if (Type == "CUI") target_cui else target_code)), aes(x = as.numeric(year), y = Rate), linetype = "dotted", color = "black") +
+    geom_line(data = combined_data %>% filter(feature_id != (if (Type == "CUI") target_cui else target_code))) +
+    geom_point(data = combined_data %>% filter(feature_id != (if (Type == "CUI") target_cui else target_code))) +
+    labs(title = paste("Rates for Target", Type, "and Related", if (Type == "CUI") "CUIs" else paste(Type, "Codes")),
+         subtitle = subtitle_text,  
+         x = "Year", y = "Rate", color = paste(Type, if (Type != "CUI") "Code" else "")) +
+    scale_x_continuous(breaks = unique(as.numeric(combined_data$year))) +
+    plot_theme
+
+  plot_counts <- ggplot(combined_data, aes(x = as.numeric(year), y = Patients, color = reorder(description_label, -target_similarity), group = feature_id)) +
+    geom_line(data = combined_data %>% filter(feature_id == (if (Type == "CUI") target_cui else target_code)), 
+              aes(x = as.numeric(year), y = Patients), linetype = "dotted", color = "black") +
+    geom_line(data = combined_data %>% filter(feature_id != (if (Type == "CUI") target_cui else target_code))) +
+    geom_point(data = combined_data %>% filter(feature_id != (if (Type == "CUI") target_cui else target_code))) +
+    labs(title = paste("Patient Counts for Target", Type, "and Related", if (Type == "CUI") "CUIs" else paste(Type, "Codes")),
+         subtitle = subtitle_text,  
+         x = "Year", y = "Patients", color = paste(Type, if (Type != "CUI") "Code" else "")) +
+    scale_x_continuous(breaks = unique(as.numeric(combined_data$year))) +
+    plot_theme
+
+  return(list(list(plot_rates, plot_counts), NULL))
+}
+
+# Function to generate and print plots while storing messages for later output
+generate_plots <- function(types, target_code, target_cui) {
+  message_list <- c()  # Initialize a list to store messages
+  
+  for (Type in types) {
+    result <- plot_related_code_trends(Type, target_code, target_cui)
+    plots <- result[[1]]
+    message_text <- result[[2]]
+
+    if (!is.null(plots)) {
+      print(plots[[1]])  # Print rate plot
+      print(plots[[2]])  # Print patient counts plot
+    } 
+    if (!is.null(message_text)) {
+      message_list <- c(message_list, message_text)
+    }
+  }
+
+  # Print all stored messages at the very end
+  if (length(message_list) > 0) {
+    for (msg in message_list) {
+      message(msg)
+    }
+  }
+}
+
+# Run the function with all types
+generate_plots(c("Diagnosis", "Medication", "Lab", "Procedure", "CUI"), target_code, target_cui)
+
+```
+
+*Notes: (1) Black dotted lines represent rates and counts for the target code per calendar year.*
+
+
