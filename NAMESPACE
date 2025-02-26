@@ -3,6 +3,7 @@
 export("%$%")
 export("%<>%")
 export("%>%")
+export(clean_ONCE_data)
 export(extract_data_for_visualization)
 export(generate_intermediary_sqlite)
 export(plot_visualized_data)

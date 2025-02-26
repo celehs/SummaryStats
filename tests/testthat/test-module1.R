@@ -95,6 +95,9 @@ filtered_dictionary <- dictionary %>%
 # }
 # test_that('clean_ONCE_data', test_clean_ONCE_data())
 
+devtools::document()
+devtools::install()
+
 library(testthat)
 library(SummaryStats)
 

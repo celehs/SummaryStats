@@ -27,7 +27,7 @@ Define the following in **Module 1**:
 - `target_code`: PheCode of primary interest in your study
 - `target_cui`: Corresponding CUI of primary interest in your study
 
-Note that if you are not running this code on O2, you will need to download codified and NLP features from the [ONCE webapp](https://shiny.parse-health.org/ONCE/) and manually specify directory paths for these dictionaries.
+*Note that if you are not running this code on O2, you will need to download codified and NLP features from the [ONCE webapp](https://shiny.parse-health.org/ONCE/) and manually specify directory paths for these dictionaries.*
 
 ```{r libraries, include=FALSE}
 
