@@ -19,7 +19,13 @@ Imports:
     stats,
     stringr,
     magrittr,
-    utils
+    utils,
+    tidyr,
+    RColorBrewer,
+    cowplot,
+    ggtext,
+    gridExtra,
+    lubridate
 Depends:
     R (>= 3.5.0)
 Suggests:
