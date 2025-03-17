@@ -25,7 +25,8 @@ Imports:
     cowplot,
     ggtext,
     gridExtra,
-    lubridate
+    lubridate,
+    knitr
 Depends:
     R (>= 3.5.0)
 Suggests:

@@ -17,7 +17,6 @@
 #' @importFrom gridExtra grid.arrange
 #' @importFrom ggtext element_textbox_simple
 #' @importFrom knitr kable
-#' @importFrom lubridate as.Date
 #' @importFrom cowplot get_legend plot_grid
 #' @importFrom RColorBrewer brewer.pal
 
