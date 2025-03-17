@@ -1,10 +1,15 @@
 
 # ------ Parameters (EDIT) ------
 
+dirpath = system.file('extdata', package = 'SummaryStats')
 # Provide directory paths to dictionary, nlp and codified data (csv)
-nlp_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_nlp.csv"
-codified_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_codified.csv"
-dictionary_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_dict.csv"
+# nlp_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_nlp.csv"
+# codified_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_codified.csv"
+# dictionary_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_dict.csv"
+
+nlp_path <- file.path(dirpath, "fake_nlp.csv")
+codified_path <- file.path(dirpath, "fake_codified.csv")
+dictionary_path <- file.path(dirpath, "fake_dict.csv")
 
 # Provide target PheCode and CUI 
 target_code <- "PheCode:335"
@@ -12,11 +17,11 @@ target_cui <- "C0026769"
 
 # If running in O2, set O2 to TRUE; if not, set O2 to FALSE and provide manual directory paths to ONCE dictionaries for codified and nlp data
 O2 <- FALSE
-manual_ONCE_path_code <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/ONCE_multiple_sclerosis_codified.csv"
-manual_ONCE_path_nlp <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/ONCE_multiple_sclerosis_nlp.csv"
+# manual_ONCE_path_code <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/ONCE_multiple_sclerosis_codified.csv"
+# manual_ONCE_path_nlp <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/ONCE_multiple_sclerosis_nlp.csv"
 
-
-
+manual_ONCE_path_code <- file.path(dirpath, "ONCE_multiple_sclerosis_codified.csv")
+manual_ONCE_path_nlp <- file.path(dirpath, "ONCE_multiple_sclerosis_nlp.csv")
 
 # ------ Code (DO NOT EDIT) ------ 
 
@@ -95,11 +100,11 @@ filtered_dictionary <- dictionary %>%
 # }
 # test_that('clean_ONCE_data', test_clean_ONCE_data())
 
-devtools::document()
-devtools::install()
+# devtools::document()
+# devtools::install()
 
-library(testthat)
-library(SummaryStats)
+# library(testthat)
+# library(SummaryStats)
 
 test_that("clean_ONCE_data errors when manual paths are missing", {
   expect_error(clean_ONCE_data(target_code = "PheCode:335", FALSE))

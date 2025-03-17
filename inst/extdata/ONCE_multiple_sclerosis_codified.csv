@@ -1,0 +1,253 @@
+Variable,Description,target_similarity,importance_score,phenotyping_features,expanded_features
+PheCode:335,multiple sclerosis,1,0.68,TRUE,TRUE
+RXNORM:354770,natalizumab,0.532,0.48,TRUE,TRUE
+RXNORM:1012892,fingolimod,0.535,0.48,TRUE,TRUE
+RXNORM:75917,interferon beta-1a,0.529,0.467,TRUE,TRUE
+RXNORM:214582,glatiramer,0.587,0.455,TRUE,TRUE
+RXNORM:1373478,dimethyl fumarate,0.501,0.414,TRUE,TRUE
+RXNORM:1310520,teriflunomide,0.42,0.383,TRUE,TRUE
+RXNORM:72257,interferon beta-1b,0.415,0.363,TRUE,TRUE
+RXNORM:897018,dalfampridine,0.436,0.35,TRUE,TRUE
+PheCode:341,other demyelinating diseases of central nervous system,0.393,0.334,TRUE,TRUE
+RXNORM:30125,modafinil,0.373,0.303,TRUE,TRUE
+PheCode:377.3,optic neuritis/neuropathy,0.303,0.278,TRUE,TRUE
+PheCode:798.1,chronic fatigue syndrome,0.253,0.266,TRUE,TRUE
+PheCode:377.1,optic atrophy,0.284,0.257,TRUE,TRUE
+PheCode:596.5,functional disorders of bladder,0.406,0.24,TRUE,TRUE
+PheCode:729.1,"rheumatism, unspecified and fibrositis",0.229,0.235,TRUE,TRUE
+PheCode:709.7,unspecified diffuse connective tissue disease,0.221,0.235,TRUE,TRUE
+PheCode:704.2,hirsutism,0.216,0.234,TRUE,TRUE
+PheCode:301,personality disorders,0.235,0.233,TRUE,TRUE
+PheCode:709.2,sicca syndrome,0.222,0.233,TRUE,TRUE
+PheCode:300.9,posttraumatic stress disorder,0.265,0.227,TRUE,TRUE
+PheCode:290.1,dementias,0.257,0.224,TRUE,TRUE
+PheCode:295.1,schizophrenia,0.231,0.222,TRUE,TRUE
+PheCode:711.3,behcet's syndrome,0.222,0.222,TRUE,TRUE
+PheCode:368.1,amblyopia,0.227,0.22,TRUE,TRUE
+PheCode:295.3,psychosis,0.207,0.216,TRUE,TRUE
+PheCode:275.2,disorders of copper metabolism,0.211,0.215,TRUE,TRUE
+PheCode:295,schizophrenia and other psychotic disorders,0.23,0.212,TRUE,TRUE
+PheCode:199.4,neurofibromatosis,0.224,0.212,TRUE,TRUE
+PheCode:383,otosclerosis,0.206,0.209,TRUE,TRUE
+PheCode:303.4,somatoform disorder,0.204,0.209,TRUE,TRUE
+PheCode:303.3,psychogenic disorder,0.192,0.209,TRUE,TRUE
+PheCode:728.7,fasciitis,0.211,0.208,TRUE,TRUE
+PheCode:527.1,hypertrophy of salivary gland,0.201,0.206,FALSE,TRUE
+PheCode:627.2,symptomatic menopause,0.216,0.205,FALSE,TRUE
+PheCode:334,degenerative disease of the spinal cord,0.294,0.204,FALSE,TRUE
+PheCode:350.1,abnormal involuntary movements,0.291,0.203,FALSE,TRUE
+PheCode:716.1,unspecified polyarthropathy or polyarthritis,0.21,0.202,FALSE,TRUE
+RXNORM:1292,baclofen,0.306,0.2,FALSE,TRUE
+PheCode:716.8,palindromic rheumatism,0.195,0.199,FALSE,TRUE
+PheCode:580.4,"renal sclerosis, nos",0.201,0.199,FALSE,TRUE
+PheCode:359.1,muscular dystrophies,0.244,0.198,FALSE,TRUE
+PheCode:706.1,acne,0.211,0.198,FALSE,TRUE
+PheCode:334.21,amyotrophic lateral sclerosis,0.224,0.198,FALSE,TRUE
+PheCode:710.2,periostitis,0.193,0.198,FALSE,TRUE
+PheCode:290.13,senile dementia,0.224,0.197,FALSE,TRUE
+PheCode:300,anxiety disorders,0.323,0.196,FALSE,TRUE
+PheCode:704.1,alopecia,0.19,0.194,FALSE,TRUE
+LOINC:6515-1,loinc:human papilloma virus rrna,0.189,0.194,FALSE,TRUE
+PheCode:296,mood disorders,0.344,0.193,FALSE,TRUE
+PheCode:340,migraine,0.229,0.192,FALSE,TRUE
+PheCode:695.4,lupus (localized and systemic),0.209,0.192,FALSE,TRUE
+PheCode:709,diffuse diseases of connective tissue,0.187,0.192,FALSE,TRUE
+PheCode:306,other mental disorder,0.193,0.192,FALSE,TRUE
+PheCode:741.3,difficulty in walking,0.248,0.191,FALSE,TRUE
+PheCode:323.2,acute (transverse) myelitis,0.281,0.191,FALSE,TRUE
+PheCode:817,concussion,0.188,0.189,FALSE,TRUE
+PheCode:300.13,phobia,0.174,0.189,FALSE,TRUE
+PheCode:290.11,alzheimer's disease,0.19,0.188,FALSE,TRUE
+PheCode:751.11,congenital anomalies of female genital organs,0.183,0.188,FALSE,TRUE
+PheCode:291.4,specific nonpsychotic mental disorders due to brain damage,0.205,0.188,FALSE,TRUE
+PheCode:346.1,nonspecific abnormal findings on radiological and other examination of skull and head,0.215,0.188,FALSE,TRUE
+PheCode:722.3,schmorl's nodes,0.184,0.187,FALSE,TRUE
+PheCode:250.5,glycosuria or acetonuria,0.182,0.187,FALSE,TRUE
+PheCode:627.5,premature menopause and other ovarian failure,0.173,0.187,FALSE,TRUE
+PheCode:300.4,dysthymic disorder,0.191,0.186,FALSE,TRUE
+PheCode:250.6,polyneuropathy in diabetes,0.174,0.186,FALSE,TRUE
+PheCode:440.9,atherosclerosis of aorta,0.173,0.186,FALSE,TRUE
+LOINC:XG277-4,nm gene analysis (group:nm),0.19,0.186,FALSE,TRUE
+PheCode:300.11,generalized anxiety disorder,0.22,0.185,FALSE,TRUE
+PheCode:440.2,atherosclerosis of the extremities,0.184,0.185,FALSE,TRUE
+RXNORM:376,corticotropin,0.202,0.184,FALSE,TRUE
+PheCode:627.21,symptomatic artificial menopause,0.198,0.184,FALSE,TRUE
+PheCode:446.5,giant cell arteritis,0.18,0.183,FALSE,TRUE
+PheCode:315.1,learning disorder,0.178,0.183,FALSE,TRUE
+PheCode:296.2,depression,0.304,0.182,FALSE,TRUE
+PheCode:697,sarcoidosis,0.182,0.182,FALSE,TRUE
+PheCode:701.4,keloid scar,0.169,0.182,FALSE,TRUE
+PheCode:305.2,eating disorder,0.183,0.181,FALSE,TRUE
+PheCode:331.9,"cerebral degeneration, unspecified",0.206,0.181,FALSE,TRUE
+PheCode:276.42,alkalosis,0.186,0.18,FALSE,TRUE
+RXNORM:1588,biotin,0.194,0.18,FALSE,TRUE
+PheCode:367.9,blindness and low vision,0.174,0.18,FALSE,TRUE
+LOINC:15196-9,cd3-cd19+ (pct) (group:19+pct),0.167,0.18,FALSE,TRUE
+PheCode:613.9,breast disorder nos,0.165,0.18,FALSE,TRUE
+PheCode:296.22,major depressive disorder,0.287,0.179,FALSE,TRUE
+PheCode:729.3,panniculitis,0.175,0.179,FALSE,TRUE
+PheCode:253.11,acromegaly and gigantism,0.174,0.179,FALSE,TRUE
+PheCode:433.12,cerebral atherosclerosis,0.182,0.179,FALSE,TRUE
+PheCode:327.41,organic or persistent insomnia,0.168,0.179,FALSE,TRUE
+PheCode:315.2,speech and language disorder,0.226,0.178,FALSE,TRUE
+PheCode:947,urticaria,0.174,0.176,FALSE,TRUE
+PheCode:370.31,keratoconjunctivitis sicca,0.175,0.176,FALSE,TRUE
+PheCode:707.1,decubitus ulcer,0.281,0.176,FALSE,TRUE
+PheCode:323,encephalitis,0.221,0.176,FALSE,TRUE
+PheCode:358.1,myasthenia gravis,0.189,0.175,FALSE,TRUE
+PheCode:260.1,cachexia,0.173,0.175,FALSE,TRUE
+PheCode:275.11,hereditary hemochromatosis,0.17,0.175,FALSE,TRUE
+PheCode:301.2,antisocial/borderline personality disorder,0.17,0.175,FALSE,TRUE
+PheCode:323.8,"encephalitis, non-infectious",0.203,0.175,FALSE,TRUE
+PheCode:386.1,meniere's disease,0.17,0.175,FALSE,TRUE
+PheCode:288.2,elevated white blood cell count,0.201,0.174,FALSE,TRUE
+PheCode:709.4,polymyositis,0.179,0.174,FALSE,TRUE
+PheCode:791,gangrene,0.169,0.174,FALSE,TRUE
+RXNORM:620,amantadine,0.226,0.174,FALSE,TRUE
+PheCode:743.12,senile osteoporosis,0.175,0.173,FALSE,TRUE
+PheCode:303.31,gastrointestinal malfunction arising from mental factors,0.174,0.173,FALSE,TRUE
+PheCode:368.7,disorders of accommodation,0.168,0.173,FALSE,TRUE
+PheCode:278.4,abnormal weight gain,0.178,0.172,FALSE,FALSE
+PheCode:705,disorders of sweat glands,0.173,0.172,FALSE,FALSE
+PheCode:300.1,anxiety disorder,0.262,0.171,FALSE,FALSE
+PheCode:315.3,mental retardation,0.167,0.171,FALSE,FALSE
+RXNORM:84990,gadobutrol,0.194,0.171,FALSE,FALSE
+PheCode:705.8,hyperhidrosis,0.189,0.171,FALSE,FALSE
+PheCode:300.3,obsessive-compulsive disorders,0.172,0.17,FALSE,FALSE
+PheCode:592.1,cystitis,0.208,0.17,FALSE,FALSE
+PheCode:695.81,erythema nodosum,0.165,0.17,FALSE,FALSE
+PheCode:367.1,myopia,0.167,0.17,FALSE,FALSE
+PheCode:499,cystic fibrosis,0.17,0.169,FALSE,FALSE
+PheCode:289.1,myelofibrosis,0.168,0.169,FALSE,FALSE
+PheCode:724.9,other unspecified back disorders,0.195,0.169,FALSE,FALSE
+PheCode:292,neurological disorders,0.253,0.168,FALSE,FALSE
+PheCode:244.3,iodine hypothyroidism,0.198,0.168,FALSE,FALSE
+PheCode:079.2,infectious mononucleosis,0.19,0.168,FALSE,FALSE
+PheCode:496.1,emphysema,0.169,0.168,FALSE,FALSE
+RXNORM:279645,almotriptan,0.168,0.168,FALSE,FALSE
+PheCode:634.1,missed abortion/hydatidiform mole,0.167,0.168,FALSE,FALSE
+ShortName:CCP,ccp,0.165,0.168,FALSE,FALSE
+PheCode:261.41,rickets or osteomalacia,0.173,0.168,FALSE,FALSE
+PheCode:359.2,myopathy,0.167,0.168,FALSE,FALSE
+PheCode:365,glaucoma,0.2,0.167,FALSE,FALSE
+PheCode:204.4,multiple myeloma,0.187,0.167,FALSE,FALSE
+PheCode:312,conduct disorders,0.177,0.165,FALSE,FALSE
+PheCode:740.2,"osteoarthrosis, generalized",0.174,0.165,FALSE,FALSE
+PheCode:770,myalgia and myositis unspecified,0.187,0.164,FALSE,FALSE
+PheCode:704.11,alopecia areata,0.168,0.164,FALSE,FALSE
+PheCode:782.3,edema,0.214,0.163,FALSE,FALSE
+RXNORM:6832,methenamine,0.27,0.163,FALSE,FALSE
+PheCode:348.9,"other conditions of brain, nos",0.203,0.163,FALSE,FALSE
+PheCode:595,hydronephrosis,0.191,0.163,FALSE,FALSE
+PheCode:320,meningitis,0.185,0.163,FALSE,FALSE
+PheCode:202.23,lymphosarcoma,0.18,0.162,FALSE,FALSE
+PheCode:701.3,circumscribed scleroderma,0.189,0.161,FALSE,FALSE
+PheCode:313.1,attention deficit hyperactivity disorder,0.175,0.161,FALSE,FALSE
+PheCode:366.2,senile cataract,0.187,0.161,FALSE,FALSE
+PheCode:599.2,retention of urine,0.221,0.161,FALSE,FALSE
+PheCode:292.3,memory loss,0.203,0.161,FALSE,FALSE
+PheCode:695.42,systemic lupus erythematosus,0.172,0.16,FALSE,FALSE
+PheCode:275.6,hypercalcemia,0.177,0.16,FALSE,FALSE
+PheCode:250.1,type 1 diabetes,0.176,0.158,FALSE,FALSE
+PheCode:687.4,disturbance of skin sensation,0.207,0.158,FALSE,FALSE
+PheCode:379,other disorders of eye,0.17,0.158,FALSE,FALSE
+PheCode:723.1,torticollis,0.17,0.158,FALSE,FALSE
+PheCode:349,other and unspecified disorders of the nervous system,0.233,0.158,FALSE,FALSE
+PheCode:440,atherosclerosis,0.169,0.157,FALSE,FALSE
+PheCode:252.1,hyperparathyroidism,0.168,0.157,FALSE,FALSE
+PheCode:350,abnormal movement,0.209,0.156,FALSE,FALSE
+PheCode:346.2,nonspecific abnormal results of function study of brain and central nervous system,0.184,0.156,FALSE,FALSE
+PheCode:798,malaise and fatigue,0.262,0.154,FALSE,FALSE
+PheCode:401.21,hypertensive heart disease,0.186,0.154,FALSE,FALSE
+PheCode:317,alcohol-related disorders,0.194,0.153,FALSE,FALSE
+PheCode:627,menopausal and postmenopausal disorders,0.179,0.153,FALSE,FALSE
+PheCode:355,complex regional/central pain syndrome,0.171,0.153,FALSE,FALSE
+PheCode:352.1,trigeminal nerve disorders [cn5],0.19,0.153,FALSE,FALSE
+PheCode:291.1,transient mental disorders due to conditions classified elsewhere,0.179,0.152,FALSE,FALSE
+RXNORM:641465,armodafinil,0.212,0.151,FALSE,FALSE
+PheCode:599.4,urinary incontinence,0.228,0.151,FALSE,FALSE
+PheCode:772.3,muscle weakness,0.208,0.151,FALSE,FALSE
+PheCode:709.3,systemic sclerosis,0.27,0.15,FALSE,FALSE
+PheCode:755.61,congenital hip dysplasia and deformity,0.166,0.15,FALSE,FALSE
+PheCode:290.3,other persistent mental disorders due to conditions classified elsewhere,0.169,0.15,FALSE,FALSE
+PheCode:350.3,lack of coordination,0.203,0.15,FALSE,FALSE
+PheCode:388,other disorders of ear,0.173,0.15,FALSE,FALSE
+CCS:198,magnetic resonance imaging,0.231,0.149,FALSE,FALSE
+PheCode:296.1,bipolar,0.188,0.149,FALSE,FALSE
+PheCode:276.5,hypovolemia,0.169,0.149,FALSE,FALSE
+PheCode:355.1,chronic pain syndrome,0.176,0.148,FALSE,FALSE
+PheCode:389.4,tinnitus,0.169,0.148,FALSE,FALSE
+RXNORM:236778,trospium,0.203,0.148,FALSE,FALSE
+PheCode:386.9,dizziness and giddiness (light-headedness and vertigo),0.205,0.147,FALSE,FALSE
+PheCode:342,hemiplegia,0.202,0.147,FALSE,FALSE
+PheCode:714.1,rheumatoid arthritis,0.184,0.145,FALSE,FALSE
+PheCode:766,"neuralgia, neuritis, and radiculitis nos",0.187,0.145,FALSE,FALSE
+PheCode:350.5,abnormal reflex,0.187,0.144,FALSE,FALSE
+PheCode:292.4,altered mental status,0.176,0.144,FALSE,FALSE
+PheCode:303.1,dissociative disorder,0.217,0.142,FALSE,FALSE
+PheCode:318,tobacco use disorder,0.192,0.142,FALSE,FALSE
+PheCode:696.4,psoriasis,0.178,0.142,FALSE,FALSE
+PheCode:433.3,cerebral ischemia,0.17,0.142,FALSE,FALSE
+PheCode:358,myoneural disorders,0.176,0.142,FALSE,FALSE
+PheCode:772.2,spasm of muscle,0.225,0.142,FALSE,FALSE
+PheCode:317.1,alcoholism,0.179,0.141,FALSE,FALSE
+PheCode:743.11,osteoporosis nos,0.21,0.141,FALSE,FALSE
+PheCode:334.2,anterior horn cell disease,0.186,0.141,FALSE,FALSE
+PheCode:279,disorders involving the immune mechanism,0.182,0.14,FALSE,FALSE
+PheCode:772,symptoms of the muscles,0.211,0.14,FALSE,FALSE
+PheCode:337,disorders of the autonomic nervous system,0.185,0.14,FALSE,FALSE
+PheCode:743.4,stress fracture,0.172,0.139,FALSE,FALSE
+PheCode:368,visual disturbances,0.168,0.138,FALSE,FALSE
+PheCode:346,abnormal findings on study of brain and/or nervous system,0.173,0.138,FALSE,FALSE
+RXNORM:214551,estradiol/norethindrone,0.2,0.137,FALSE,FALSE
+PheCode:563,constipation,0.18,0.136,FALSE,FALSE
+PheCode:344,other paralytic syndromes,0.255,0.136,FALSE,FALSE
+PheCode:726.1,enthesopathy,0.182,0.135,FALSE,FALSE
+PheCode:495,asthma,0.21,0.134,FALSE,FALSE
+PheCode:414.2,ascvd,0.171,0.134,FALSE,FALSE
+PheCode:348,other conditions of brain,0.185,0.134,FALSE,FALSE
+PheCode:333,extrapyramidal disease and abnormal movement disorders,0.185,0.134,FALSE,FALSE
+PheCode:610.2,fibroadenosis of breast,0.226,0.133,FALSE,FALSE
+PheCode:743.1,osteoporosis,0.187,0.133,FALSE,FALSE
+PheCode:626.4,premenstrual tension syndromes,0.198,0.132,FALSE,FALSE
+PheCode:596,other disorders of bladder,0.272,0.132,FALSE,FALSE
+RXNORM:125933,cranberry,0.183,0.132,FALSE,FALSE
+RXNORM:1300786,mirabegron,0.171,0.132,FALSE,FALSE
+PheCode:773,pain in limb,0.166,0.131,FALSE,FALSE
+PheCode:292.1,aphasia/speech disturbance,0.184,0.131,FALSE,FALSE
+PheCode:334.1,spinocerebellar disease,0.214,0.131,FALSE,FALSE
+CCS:212,diagnostic physical therapy,0.192,0.13,FALSE,FALSE
+PheCode:332,parkinson's disease,0.17,0.13,FALSE,FALSE
+PheCode:799,debility unspecified,0.181,0.13,FALSE,FALSE
+RXNORM:119565,tolterodine,0.204,0.129,FALSE,FALSE
+PheCode:230,kaposi's sarcoma,0.176,0.128,FALSE,FALSE
+PheCode:174,breast cancer,0.191,0.127,FALSE,FALSE
+RXNORM:5882,interferon gamma-1b,0.176,0.125,FALSE,FALSE
+PheCode:313.3,autism,0.233,0.124,FALSE,FALSE
+CCS:218,psychological and psychiatric evaluation and therapy,0.21,0.124,FALSE,FALSE
+PheCode:907,injuries to the nervous system,0.213,0.122,FALSE,FALSE
+PheCode:290.16,vascular dementia,0.263,0.121,FALSE,FALSE
+PheCode:760,back pain,0.174,0.121,FALSE,FALSE
+PheCode:350.2,abnormality of gait,0.188,0.121,FALSE,FALSE
+PheCode:345.1,epilepsy,0.176,0.12,FALSE,FALSE
+PheCode:347,cataplexy and narcolepsy,0.167,0.119,FALSE,FALSE
+PheCode:272.11,hypercholesterolemia,0.182,0.119,FALSE,FALSE
+PheCode:433,cerebrovascular disease,0.193,0.117,FALSE,FALSE
+PheCode:343,infantile cerebral palsy,0.198,0.116,FALSE,FALSE
+PheCode:1005,other symptoms,0.166,0.116,FALSE,FALSE
+PheCode:278.1,obesity,0.17,0.114,FALSE,FALSE
+RXNORM:11416,zinc,0.165,0.114,FALSE,FALSE
+PheCode:289.3,personal history of diseases of blood and blood-forming organs,0.168,0.114,FALSE,FALSE
+CCS:234,pathology,0.2,0.111,FALSE,FALSE
+RXNORM:3322,diazepam,0.201,0.107,FALSE,FALSE
+PheCode:707,chronic ulcer of skin,0.2,0.104,FALSE,FALSE
+PheCode:716.3,kaschin-beck disease,0.169,0.103,FALSE,FALSE
+PheCode:745,pain in joint,0.169,0.103,FALSE,FALSE
+PheCode:599,other symptoms/disorders or the urinary system,0.209,0.103,FALSE,FALSE
+PheCode:591,urinary tract infection,0.207,0.094,FALSE,FALSE
+RXNORM:54251,oxybutynin chloride,0.202,0.091,FALSE,FALSE
+PheCode:041.21,rheumatic fever / chorea,0.18,0.09,FALSE,FALSE
+PheCode:250,diabetes mellitus,0.18,0.086,FALSE,FALSE
+RXNORM:57258,tizanidine,0.195,0.083,FALSE,FALSE
+PheCode:564,functional digestive disorders,0.191,0.082,FALSE,FALSE
+RXNORM:214299,benzocaine/docusate,0.202,0.076,FALSE,FALSE
