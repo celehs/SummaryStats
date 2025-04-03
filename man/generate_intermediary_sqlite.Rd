@@ -4,16 +4,21 @@
 \alias{generate_intermediary_sqlite}
 \title{Generate Intermediary SQLite Database}
 \usage{
-generate_intermediary_sqlite(con, output_sqlite_path)
+generate_intermediary_sqlite(con, output_sqlite_path, time_column = NULL)
 }
 \arguments{
-\item{con}{A database connection object to an existing SQLite database.}
+\item{con}{A database connection object to an existing SQLite database (usually containing `df_monthly`).}
 
-\item{output_sqlite_path}{Path to the output SQLite file where processed data will be stored.}
+\item{output_sqlite_path}{A string indicating the file path to save the aggregated intermediary SQLite database.}
+
+\item{time_column}{Optional. A string naming the column (e.g., "Month") from which to extract the year. The first four characters 
+of each entry in this column must represent a 4-digit year (e.g., "2013", "2020-05", or "2017-12-03").}
 }
 \value{
-Saves the aggregated data to an SQLite file.
+Saves a new SQLite database file at the specified path containing a table named `processed_data`.
 }
 \description{
-This function aggregates patient data and stores it in an intermediary SQLite file.
+Aggregates patient data from a source SQLite connection and writes it to an intermediary SQLite file. 
+If a `time_column` is provided (e.g., "Month"), the function will extract the year using the first four characters 
+and aggregate by `Patient`, `Parent_Code`, and `Year`. Otherwise, it aggregates by `Patient` and `Parent_Code` only.
 }

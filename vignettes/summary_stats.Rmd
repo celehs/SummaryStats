@@ -6,8 +6,8 @@ output:
   html_vignette: default
   pdf_document: default
 vignette: >
-  %\VignetteIndexEntry{Summary_Stats}
-  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Summary_Stats} 
+  %\VignetteEncoding{UTF-8} 
   %\VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -27,6 +27,14 @@ The vignette showcases the following key features:
 
 The function supports flexible workflows, making it adaptable for datasets spanning medications, laboratory tests, procedures, and diagnoses.
 
+If you're interested in longitudinal trends (e.g., changes in patient counts over time), check out the any_codes_over_year vignette. It shows how to:
+
+* Aggregate data by year
+
+* Visualize time trends across selected medical codes
+
+* Customize y-axis and time intervals for better interpretation
+
 # Importance of the Summary Stats Function
 
 * Streamlined Data Aggregation
@@ -44,7 +52,6 @@ Using dictionary mapping, the function ensures that data is consistently labeled
 * Data Visualization for Insight Generation
 
 Customizable histograms allow researchers to explore trends, identify outliers, and generate publication-ready visualizations.
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(

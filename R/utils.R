@@ -5,7 +5,8 @@ if (getRversion() >= "2.15.1") {
     '.', 'Patient', 'Month', 'Parent_Code', 'Name', 'Presence', 
     'Category', 'Common_Ontology_Code', 'Common_Ontology_Description',
     'Group_Code', 'Group_Description', 'Count',
-    'Total_Count', 'Patient_Count', 'Type'
+    'Total_Count', 'Patient_Count', 'Type', 'Year', 'Variable', 'Description',
+    'target_similarity', 'description', 'cui', 'term'
   )
   
   utils::globalVariables(vars)

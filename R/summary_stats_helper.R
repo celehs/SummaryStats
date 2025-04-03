@@ -348,3 +348,41 @@ plot_summary_data <- function(data, count_column, title_label, x_axis_label, out
     log_scale = log_scale && count_column == "Total_Count"  # Apply log scale only for Total Count
   )
 }
+
+# for any code over year
+get_description <- function(code, dict) {
+  code_number <- sub(".*:", "", code)  # Strip prefix for display
+  
+  # Match in Group_Code
+  group_match <- which(trimws(as.character(dict$Group_Code)) == code)
+  if (length(group_match) > 0 && !is.na(dict$Group_Description[group_match[1]])) {
+    desc <- dict$Group_Description[group_match[1]]
+  } else {
+    # Match in Common_Ontology_Code
+    common_match <- which(trimws(as.character(dict$Common_Ontology_Code)) == code)
+    if (length(common_match) > 0 && !is.na(dict$Common_Ontology_Description[common_match[1]])) {
+      desc <- dict$Common_Ontology_Description[common_match[1]]
+    } else {
+      desc <- code_number
+    }
+  }
+  
+  # Truncate description if needed
+  if (!is.na(desc) && nchar(desc) > 30) {
+    desc <- paste0(substr(desc, 1, 30), "[..]")
+  }
+  
+  return(paste0(desc, " (", code_number, ")"))
+}
+
+
+custom_breaks <- function(max_y) {
+  out <- unique(c(
+    0,
+    seq(0, min(200, max_y), by = 50),
+    if (max_y > 200) seq(200, min(1000, max_y), by = 100),
+    if (max_y > 1000) seq(1000, min(5000, max_y), by = 500),
+    if (max_y > 5000) seq(5000, max_y + 1000, by = 1000)
+  ))
+  return(out)
+}

@@ -24,13 +24,11 @@ Imports:
     RColorBrewer,
     cowplot,
     ggtext,
-    gridExtra,
-    lubridate,
-    knitr
+    knitr,
+    gridExtra
 Depends:
     R (>= 3.5.0)
 Suggests:
-    knitr,
     rmarkdown,
     testthat
 VignetteBuilder: knitr

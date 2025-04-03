@@ -1,0 +1,29 @@
+#' Year-wise Patient Count Data for Selected Codes
+#'
+#' @description A dataset showing patient count trends over time (by year) for selected medical codes including one PheCode and two RxNorm codes. 
+#' Useful for generating line plots of patient trends across years.
+#'
+#' @name summary_stats_data_year
+#' @aliases output_data_year
+#' @usage data("summary_stats_data_year")
+#' @format A named list of 4 data frames. Each element corresponds to a code or to the full combined data.
+#'
+#' @details
+#' Each entry in the list represents patient counts by year for a specific code. 
+#' Each row in the data frames contains:
+#' - **Year**: The 4-digit year (e.g., 2010, 2013).
+#' - **Parent_Code**: The full ontology-prefixed code (e.g., `"PheCode:714.1"`, `"RXNORM:5487"`).
+#' - **Patient_Count**: Number of unique patients who had at least one occurrence of the code in that year.
+#' - **Name**: Truncated name or description of the code with code number (e.g., `"Rheumatoid arthritis (714.1)"`).
+#'
+#' ## Codes included:
+#' - `"PheCode:714.1"`: Represents rheumatoid arthritis.
+#' - `"RXNORM:5487"`: Represents a specific medication ingredient.
+#' - `"RXNORM:6851"`: Another medication ingredient.
+#' - `"combined"`: The merged data across all codes above for faceted plotting or full-line comparison.
+#'
+#' @examples
+#' data("summary_stats_data_year")
+#' head(summary_stats_data_year$`RXNORM:6851`)
+#' head(summary_stats_data_year$combined)
+NULL

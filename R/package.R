@@ -1,9 +1,10 @@
 #' @importFrom data.table data.table as.data.table dcast fread fwrite rbindlist uniqueN :=
 #' @importFrom dplyr distinct filter group_by mutate pull select summarise n_distinct recode
 #'                    rename arrange left_join
-#' @importFrom ggplot2 aes geom_bar ggsave ggplot labs scale_fill_manual
+#' @importFrom ggplot2 aes geom_bar ggsave ggplot labs scale_fill_manual scale_x_continuous 
 #'                    scale_y_continuous scale_y_log10 theme theme_minimal scale_fill_brewer
-#'                    element_text element_rect unit geom_line geom_point scale_color_brewer
+#'                    element_text element_rect element_line element_blank unit geom_line 
+#'                    geom_point scale_color_brewer
 #' @importFrom grid unit
 #' @importFrom Matrix sparseMatrix summary t
 #' @importFrom RSQLite dbClearResult dbConnect dbDisconnect dbExecute dbFetch
@@ -12,7 +13,7 @@
 #' @importFrom scales alpha comma hue_pal
 #' @importFrom stats na.omit reorder runif setNames var
 #' @importFrom stringr str_squish str_replace str_remove str_detect
-#' @importFrom utils capture.output head object.size tail
+#' @importFrom utils capture.output head object.size tail read.csv
 #' @importFrom tidyr pivot_longer pivot_wider
 #' @importFrom gridExtra grid.arrange
 #' @importFrom ggtext element_textbox_simple

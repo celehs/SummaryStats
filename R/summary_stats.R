@@ -1,28 +1,40 @@
 #' Generate Intermediary SQLite Database
 #'
-#' @description This function aggregates patient data and stores it in an intermediary SQLite file.
+#' @description 
+#' Aggregates patient data from a source SQLite connection and writes it to an intermediary SQLite file. 
+#' If a `time_column` is provided (e.g., "Month"), the function will extract the year using the first four characters 
+#' and aggregate by `Patient`, `Parent_Code`, and `Year`. Otherwise, it aggregates by `Patient` and `Parent_Code` only.
 #'
-#' @param con A database connection object to an existing SQLite database.
-#' @param output_sqlite_path Path to the output SQLite file where processed data will be stored.
-#' 
-#' @return Saves the aggregated data to an SQLite file.
+#' @param con A database connection object to an existing SQLite database (usually containing `df_monthly`).
+#' @param output_sqlite_path A string indicating the file path to save the aggregated intermediary SQLite database.
+#' @param time_column Optional. A string naming the column (e.g., "Month") from which to extract the year. The first four characters 
+#' of each entry in this column must represent a 4-digit year (e.g., "2013", "2020-05", or "2017-12-03"). 
+#'
+#' @return Saves a new SQLite database file at the specified path containing a table named `processed_data`.
 #' @export
-generate_intermediary_sqlite <- function(con, output_sqlite_path) {
-  # Perform aggregation directly in SQL
-  sql_query <- "
-    SELECT 
-      Patient, 
-      Parent_Code, 
-      SUM(Count) AS Count
-    FROM 
-      df_monthly
-    GROUP BY 
-      Patient, Parent_Code
-  "
-  # Execute the SQL query and save the results into an intermediary SQLite file
-  aggregated_data <- dbGetQuery(con, sql_query)
+generate_intermediary_sqlite <- function(con, output_sqlite_path, time_column = NULL) {
+  if (!is.null(time_column)) {
+    sql_query <- sprintf("
+      SELECT 
+        Patient, 
+        Parent_Code, 
+        SUBSTR(%s, 1, 4) AS Year,  
+        SUM(Count) AS Count
+      FROM df_monthly
+      GROUP BY Patient, Parent_Code, Year
+    ", time_column)
+  } else {
+    sql_query <- "
+      SELECT 
+        Patient, 
+        Parent_Code, 
+        SUM(Count) AS Count
+      FROM df_monthly
+      GROUP BY Patient, Parent_Code
+    "
+  }
   
-  # Save the aggregated data to the SQLite file
+  aggregated_data <- dbGetQuery(con, sql_query)
   con_out <- dbConnect(SQLite(), dbname = output_sqlite_path)
   dbWriteTable(con_out, "processed_data", aggregated_data, overwrite = TRUE)
   dbDisconnect(con_out)
@@ -160,4 +172,127 @@ plot_visualized_data <- function(data, count_column = NULL, prefix, description_
   }
   
   return(plots)
+}
+
+
+
+#' Extract Patient Counts Over Time
+#'
+#' @description Extracts patient counts for specified codes from a time-aggregated intermediary SQLite file. 
+#' For each code selected, it returns the number of unique patients observed in each year.
+#'
+#' @param sqlite_file A string path to the intermediary SQLite database file generated from Step 1.
+#' @param codes_of_interest A character vector of full codes (e.g., "RXNORM:1234", "PheCode:714.1") to extract.
+#' @param dictionary_mapping A data frame that maps codes to descriptions. It must include `Group_Code`, `Group_Description`,
+#' `Common_Ontology_Code`, and `Common_Ontology_Description`.
+#'
+#' @return A named list of data frames:
+#' * Each element corresponds to one code, showing `Year`, `Parent_Code`, `Patient_Count`, and `Name`.
+#' * The `"combined"` element contains the merged data for all codes.
+#' 
+#' @export
+extract_patient_counts_over_years <- function(sqlite_file, codes_of_interest, dictionary_mapping) {
+  con <- dbConnect(SQLite(), dbname = sqlite_file)
+  
+  dictionary_mapping[] <- lapply(dictionary_mapping, function(x) {
+    if (isS4(x)) as.character(x) else x
+  })
+  
+  query <- sprintf("
+    SELECT Year, Parent_Code, COUNT(DISTINCT Patient) AS Patient_Count
+    FROM processed_data
+    WHERE Parent_Code IN ('%s')
+    GROUP BY Year, Parent_Code
+  ", paste(codes_of_interest, collapse = "', '"))
+  
+  patient_data <- dbGetQuery(con, query)
+  dbDisconnect(con)
+  
+  patient_data$Name <- sapply(patient_data$Parent_Code, get_description, dict = dictionary_mapping)
+  
+  final_data <- patient_data
+  final_data$Name <- sapply(final_data$Parent_Code, get_description, dict = dictionary_mapping)
+  
+  data_list <- split(final_data, final_data$Parent_Code)
+  data_list$combined <- final_data
+  
+  return(data_list)
+}
+
+
+
+#' Plot Patient Counts Over Time
+#'
+#' @description Generates a line plot showing patient counts per year for one or more codes. The input `data` should come from 
+#' `extract_patient_counts_over_years()`. You can apply linear or log scale and filter to a specific year range.
+#'
+#' @param data A data frame from `output_data$combined` or a single code element from `extract_patient_counts_over_years()`.
+#' @param title Title of the plot.
+#' @param year_range Optional. A numeric vector of length 2 (e.g., `c(2000, 2020)`) to limit the x-axis range.
+#' @param output_path Directory to save the plot if `save_plots = TRUE`. Defaults to `NULL`.
+#' @param save_plots Logical; if `TRUE`, saves the plot to `output_path` as PNG.
+#' @param auto_breaks Logical; if `TRUE`, enables non-uniform y-axis breaks based on patient count ranges.
+#' @param log_scale Logical; if `TRUE`, applies log10 transformation to y-axis.
+#'
+#' @return A ggplot object.
+#' @export
+plot_patient_counts_over_time <- function(data, 
+                                          title = "Patient Counts Over Time", 
+                                          year_range = NULL, 
+                                          output_path = NULL, 
+                                          save_plots = FALSE,
+                                          auto_breaks = FALSE,
+                                          log_scale = FALSE) {
+  data$Year <- as.numeric(as.character(data$Year))
+  
+  if (!is.null(year_range) && length(year_range) == 2) {
+    data <- data[data$Year >= year_range[1] & data$Year <= year_range[2], ]
+  }
+  
+  max_y <- max(data$Patient_Count, na.rm = TRUE)
+  
+  p <- ggplot(data, aes(x = Year, y = Patient_Count, color = Name)) +
+    geom_line(linewidth = 1.5) +
+    geom_point(size = 2.5) +
+    labs(
+      title = title,
+      x = "Year",
+      y = "Patient Count",
+      color = "Code"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 15),
+      axis.text.y = element_text(size = 15),
+      axis.title.x = element_text(size = 20),
+      axis.title.y = element_text(size = 20),
+      plot.title = element_text(size = 20, face = "bold"),
+      plot.margin = unit(c(1, 1, 1, 4), "cm"),
+      legend.position = "right",
+      legend.justification = c(1, 1),
+      legend.background = element_rect(fill = alpha('white', 0.8)),
+      legend.text = element_text(size = 12),
+      legend.title = element_text(size = 14),
+      panel.grid.major.y = element_line(color = "gray85"),
+      panel.grid.minor.y = element_blank()
+    ) +
+    scale_x_continuous(breaks = pretty(data$Year))
+  
+  if (auto_breaks) {
+    p <- p + scale_y_continuous(
+      breaks = custom_breaks(max_y),
+      labels = scales::comma
+    )
+  }
+  
+  if (log_scale) {
+    p <- p + scale_y_log10()
+  }
+  
+  if (save_plots && !is.null(output_path)) {
+    ggsave(filename = file.path(output_path, paste0(gsub(" ", "_", title), ".png")), 
+           plot = p, width = 18, height = 8, dpi = 300)
+  }
+  
+  return(p)
 }

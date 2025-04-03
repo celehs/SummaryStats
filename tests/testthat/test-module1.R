@@ -32,7 +32,6 @@ library(ggplot2)
 library(gridExtra)
 library(ggtext)
 library(knitr)
-library(lubridate)
 library(cowplot)
 library(RColorBrewer)
 
