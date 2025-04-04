@@ -1,0 +1,334 @@
+---
+title: "EHR Data QC Pipeline"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+This script generates tables and figures for EHR data quality control (QC). It processes NLP and codified datasets, ensuring data consistency and reliability for analysis. 
+
+### Requirements
+
+For each sample or institution, you should have two datasets (NLP & codified) that include at least:
+
+- `patient_num`: Character variable for patient ID
+- `feature_id`: Character variable for feature (code) ID
+- `start_date`: Date of each `feature_id`
+
+Additionally, you need a data dictionary containing:
+
+- `feature_id`: Character variable for feature (code) ID
+- `description`: Text description of `feature_id`
+
+### Setup
+
+Define the following in **Module 1**:
+
+- Directory paths to dictionary, NLP, and codified data
+- `target_code`: PheCode of primary interest in your study
+- `target_cui`: Corresponding CUI of primary interest in your study
+
+*Note that if you are not running this code on O2, you will need to download codified and NLP features from the [ONCE webapp](https://shiny.parse-health.org/ONCE/) and manually specify directory paths for these dictionaries.*
+
+```{r libraries, include=FALSE}
+
+# rm(list = ls())
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE, fig.width = 20, fig.height = 8)
+
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(gridExtra)
+library(ggtext)
+library(knitr)
+library(lubridate)
+library(cowplot)
+library(RColorBrewer)
+library(purrr)
+
+source("Helper_Functions_04032025.R")
+
+```
+
+## Module 1: Data and Dictionary Import & Preparation
+
+This module imports and prepares the NLP and codified datasets for analysis. It also imports three data dictionaries - an institution-specific data dictionary with codified feature descriptions (user-defined) and two ONCE dictionaries for selecting similar features to the target PheCode and CUI (automatically uploaded from O2).
+
+### Outputs
+
+1. Cleaned NLP and codified datasets
+2. Filtered data dictionary with target and common code feature descriptions
+3. ONCE dictionaries with selected codified and NLP features
+
+```{r module1a}
+
+# ----------------------- USER INPUT -----------------------
+
+# Provide target PheCode and CUI
+target_code <- "PheCode:335"
+target_cui <- "C0026769"
+
+# If running this script on O2, set to TRUE (otherwise FALSE)
+O2 <- FALSE
+
+# Dictionary path
+dictionary_path <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_dict.csv"
+
+# Data paths
+paths <- list(
+  nlp1 = "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_nlp.csv",
+  codified1 = "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_codified.csv"
+)
+
+# Optional second sample/institution (leave commented out if only plotting a single sample/institution)
+paths$nlp2 <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_nlp_v2.csv"
+paths$codified2 <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/fake_codified_v2.csv"
+
+# Customize sample names
+sample_labels <- list("1" = "UPMC Sample 1", "2" = "UPMC Sample 2")  
+
+# Manual ONCE paths (if O2 = FALSE)
+manual_ONCE_path_code <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/ONCE_multiple_sclerosis_codified.csv"
+manual_ONCE_path_nlp <- "/Users/kimberlygreco/Dropbox/CELEHS/testdata/ONCE_multiple_sclerosis_nlp.csv"
+
+```
+
+```{r module1b}
+
+# ----------------------- DO NOT EDIT -----------------------
+
+# Load and clean raw data
+data_inputs <- load_input_data(paths)
+
+# Load ONCE dictionary
+ONCE <- clean_ONCE_data(target_code, O2, manual_ONCE_path_code, manual_ONCE_path_nlp)
+
+# Load filtered dictionary
+filtered_dictionary <- filter_dictionary(dictionary_path, target_code, target_cui)
+
+```
+
+## Module 2: Patient & Code Summaries
+
+This module summarizes the NLP and codified datasets, including patient counts and prevalence of the target PheCode and CUI. Patient counts are summarized annually (line plots) and overall (bar plots).
+
+### Outputs
+
+1. Patient counts over time
+2. Table of follow-up duration statistics
+
+```{r module2}
+
+# ----------------------- DO NOT EDIT -----------------------
+
+# 2.a. Display total sample sizes
+sample_sizes <- lapply(names(data_inputs), function(name) {
+  data <- data_inputs[[name]]
+  data_type <- ifelse(grepl("nlp", name), "NLP", "Codified")
+  sample_key <- ifelse(grepl("2", name), "2", "1")
+  sample_label <- sample_labels[[sample_key]]
+  data.frame(Sample = sample_label, Dataset = data_type, `Number of Patients` = length(unique(data$patient_num)))
+}) %>% bind_rows()
+
+knitr::kable(sample_sizes, caption = "Total Sample Sizes")
+
+# 2.b. NLP: generate summaries and plots
+nlp_data_inputs <- data_inputs[grepl("nlp", names(data_inputs))]
+nlp_summaries <- generate_all_patient_data(nlp_data_inputs, target_cui, sample_labels)
+
+plot_nlp <- generate_line_plot(nlp_summaries$counts, "Sample Size by Year (NLP)")
+plot_bar_nlp <- generate_bar_plot(nlp_summaries$summary, "Total Patients vs. Target CUI")
+
+# 2.c. Codified: generate summaries and plots
+cod_data_inputs <- data_inputs[grepl("codified", names(data_inputs))]
+cod_summaries <- generate_all_patient_data(cod_data_inputs, target_code, sample_labels)
+
+plot_codified <- generate_line_plot(cod_summaries$counts, "Sample Size by Year (Codified)")
+plot_bar_codified <- generate_bar_plot(cod_summaries$summary, "Total Patients vs. Target Code")
+
+# 2.d. Extract legends
+legend_nlp <- cowplot::get_legend(
+  plot_nlp + theme(legend.position = "right")
+)
+
+legend_codified <- cowplot::get_legend(
+  plot_codified + theme(legend.position = "right")
+)
+
+# 2.e. Arrange the plots with legend to the right
+combined_plot_nlp <- cowplot::plot_grid(
+  plot_nlp + theme(legend.position = "none"),
+  plot_bar_nlp,
+  legend_nlp,
+  ncol = 3,
+  rel_widths = c(3, 2, 1)
+)
+
+combined_plot_codified <- cowplot::plot_grid(
+  plot_codified + theme(legend.position = "none"),
+  plot_bar_codified,
+  legend_codified,
+  ncol = 3,
+  rel_widths = c(3, 2, 1)
+)
+
+# 2.f. Display plots
+print(combined_plot_nlp)
+print(combined_plot_codified)
+
+```
+
+## Module 3: Common PheCode Trends (Parent-Child Correlation)
+
+This module examines hierarchical relationships between PheCodes, tracking trends over time for parent and child PheCodes.
+
+### Outputs
+
+1. Plot of rates over time for 3 common PheCodes
+2. Plot of patient counts over time for 3 common PheCodes
+
+```{r module3}
+
+# ----------------------- DO NOT EDIT ----------------------- 
+
+# 3.a. Prepare codified data list using sample_labels
+codified_data_list <- list()
+if (!is.null(data_inputs$codified1)) codified_data_list[["1"]] <- data_inputs$codified1
+if (!is.null(data_inputs$codified2)) codified_data_list[["2"]] <- data_inputs$codified2
+
+# 3.b. Generate PheCode summaries
+phecode_data <- lapply(codified_data_list, generate_phecode_summary)
+
+phecodes <- c("411", "250", "296")
+
+# 3.c. Loop through PheCodes and generate plots
+plots <- lapply(phecodes, function(p) {
+  rate_plot <- plot_trends_v2(phecode_data, p, filtered_dictionary, "Rate", "Rate", "Rates", sample_labels)
+  count_plot <- plot_trends_v2(phecode_data, p, filtered_dictionary, "Patients", "Patients per Year", "Patient Counts", sample_labels)
+  bar_plot <- plot_total_patients_v2(codified_data_list, p, filtered_dictionary, sample_labels)
+
+  combined_plot <- cowplot::plot_grid(
+                    count_plot + theme(legend.position = "none"),
+                    bar_plot + theme(legend.position = "none"),
+                    ncol = 2,
+                    rel_widths = c(3, 2))
+
+  list(rate_plot = rate_plot, combined_plot = combined_plot)
+})
+
+# 3.d. Print plots
+for (i in seq_along(plots)) {
+  print(plots[[i]]$rate_plot)
+  print(plots[[i]]$combined_plot)
+}
+
+```
+
+*Notes: (1) Rates are calculated as the number of patients with the target PheCode per calendar year divided by the total number of patients with any code in the same year.*
+
+## Module 4: Target PheCode-CUI Trends
+
+This module analyzes the relationship between a target PheCode and CUI, including trends in annual rates, patient counts, and intra-patient correlation.
+
+### Outputs
+
+1. Plot of rates over time for target PheCode-CUI pair
+2. Plot of patient counts over time for target PheCode-CUI pair
+3. Plot of intra-patient correlation over time for target PheCode-CUI pair
+
+```{r module4}
+
+# ----------------------- DO NOT EDIT ----------------------- 
+
+# 4.a. Build codified and NLP lists from sample labels
+codified_list <- list()
+nlp_list <- list()
+if (!is.null(data_inputs$codified1)) codified_list[["1"]] <- data_inputs$codified1
+if (!is.null(data_inputs$codified2)) codified_list[["2"]] <- data_inputs$codified2
+if (!is.null(data_inputs$nlp1)) nlp_list[["1"]] <- data_inputs$nlp1
+if (!is.null(data_inputs$nlp2)) nlp_list[["2"]] <- data_inputs$nlp2
+
+# 4.b. Summarize across codified and NLP
+summarized <- summarize_target_code_trends(
+  codified_list = codified_list,
+  nlp_list = nlp_list,
+  target_code = target_code,
+  target_cui = target_cui,
+  sample_labels = sample_labels 
+)
+
+# 4.c. Plot trends across samples/institutions
+trend_plots <- plot_target_code_trends(
+  summary_data = summarized$combined,
+  target_code = target_code,
+  target_cui = target_cui,
+  dictionary_code = ONCE$code,
+  dictionary_nlp = ONCE$nlp
+)
+
+# 4.d. Plot correlation across samples/institutions
+correlation_plot <- plot_target_code_correlation(
+  wide_data = summarized$wide,
+  target_code = target_code,
+  target_cui = target_cui,
+  summary_data = summarized$combined,
+  dictionary_code = ONCE$code,
+  dictionary_nlp = ONCE$nlp
+)
+
+# 4.e. Print plots
+trend_plots$rates
+trend_plots$counts
+correlation_plot
+
+```
+
+*Notes: (1) Rates are calculated as the number of patients with the target code per calendar year divided by the total number of patients with any code in the same year; (2) Intra-patient correlations are calculated as the Spearman correlation between the code counts for patients in the same year*
+
+## Module 5: ONCE Feature Trends (Diagnoses, Medications, Labs, Procedures)
+
+This module identifies the top five related codes in different categories (diagnosis, medication, lab, procedure, CUI) based on ONCE feature similarity and tracks their trends over time. Patient counts are summarized annually (line plots) and overall (bar plots).
+
+### Outputs
+
+1. Plot of rates over time for related features
+2. Plot of patient counts over time for related features
+
+```{r module5}
+
+# ----------------------- DO NOT EDIT -----------------------
+
+# 5.a. Build codified and NLP lists from data_inputs
+codified_list <- list()
+nlp_list <- list()
+if (!is.null(data_inputs$codified1)) codified_list[["1"]] <- data_inputs$codified1
+if (!is.null(data_inputs$codified2)) codified_list[["2"]] <- data_inputs$codified2
+if (!is.null(data_inputs$nlp1)) nlp_list[["1"]] <- data_inputs$nlp1
+if (!is.null(data_inputs$nlp2)) nlp_list[["2"]] <- data_inputs$nlp2
+
+types <- c("Diagnosis", "Medication", "Lab", "Procedure", "CUI")
+
+# 5.b. Generate and display plots
+plot_list <- lapply(types, function(t) {
+  result <- plot_related_code_trends_v2(
+    Type = t,
+    target_code = target_code,
+    target_cui = target_cui,
+    codified_list = codified_list,
+    nlp_list = nlp_list,
+    sample_labels = sample_labels,
+    ONCE = ONCE
+  )
+
+  if (!is.null(result[[1]])) {
+    print(result[[1]][[1]])  # Line plot (rates)
+    print(result[[1]][[2]])  # Line + bar combined plot
+  } else {
+    message(result[[2]])
+  }
+})
+
+```
+
+
