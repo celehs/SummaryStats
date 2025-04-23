@@ -1,34 +1,35 @@
-"","feature_id","description"
-"1","PheCode:250","diabetes mellitus"
-"2","PheCode:250.2","type 2 diabetes"
-"3","PheCode:250.1","type 1 diabetes"
-"4","PheCode:250.21","type 2 diabetes with ketoacidosis"
-"5","PheCode:250.11","type 1 diabetes with ketoacidosis"
-"6","PheCode:250.22","type 2 diabetes with renal manifestations"
-"7","PheCode:250.12","type 1 diabetes with renal manifestations"
-"8","PheCode:250.23","type 2 diabetes with ophthalmic manifestations"
-"9","PheCode:250.13","type 1 diabetes with ophthalmic manifestations"
-"10","PheCode:250.24","type 2 diabetes with neurological manifestations"
-"11","PheCode:250.14","type 1 diabetes with neurological manifestations"
-"12","PheCode:250.25","diabetes type 2 with peripheral circulatory disorders"
-"13","PheCode:250.15","diabetes type 1 with peripheral circulatory disorders"
-"14","PheCode:296","mood disorders"
-"15","PheCode:296.1","bipolar"
-"16","PheCode:296.2","depression"
-"17","PheCode:296.22","major depressive disorder"
-"18","PheCode:335","multiple sclerosis"
-"19","PheCode:250.6","polyneuropathy in diabetes"
-"20","PheCode:250.7","diabetic retinopathy"
-"21","PheCode:411","ischemic heart disease"
-"22","PheCode:411.2","myocardial infarction"
-"23","PheCode:411.1","unstable angina"
-"24","PheCode:411.9","other acute and subacute forms"
-"25","PheCode:411.4","coronary atherosclerosis"
-"26","PheCode:411.3","angina pectoris"
-"27","PheCode:411.8","other chronic ischemic heart disease"
-"28","PheCode:411.41","aneurysm and dissection of heart"
-"29","PheCode:250.4","abnormal glucose"
-"30","PheCode:250.41","impaired fasting glucose"
-"31","PheCode:250.42","other abnormal glucose"
-"32","PheCode:250.5","glycosuria or acetonuria"
-"33","PheCode:250.3","insulin pump user"
+,feature_id,description
+1,PheCode:250,diabetes mellitus
+2,PheCode:250.2,type 2 diabetes
+3,PheCode:250.1,type 1 diabetes
+4,PheCode:250.21,type 2 diabetes with ketoacidosis
+5,PheCode:250.11,type 1 diabetes with ketoacidosis
+6,PheCode:250.22,type 2 diabetes with renal manifestations
+7,PheCode:250.12,type 1 diabetes with renal manifestations
+8,PheCode:250.23,type 2 diabetes with ophthalmic manifestations
+9,PheCode:250.13,type 1 diabetes with ophthalmic manifestations
+10,PheCode:250.24,type 2 diabetes with neurological manifestations
+11,PheCode:250.14,type 1 diabetes with neurological manifestations
+12,PheCode:250.25,diabetes type 2 with peripheral circulatory disorders
+13,PheCode:250.15,diabetes type 1 with peripheral circulatory disorders
+14,PheCode:296,mood disorders
+15,PheCode:296.1,bipolar
+16,PheCode:296.2,depression
+17,PheCode:296.22,major depressive disorder
+18,PheCode:335,multiple sclerosis
+19,PheCode:250.6,polyneuropathy in diabetes
+20,PheCode:250.7,diabetic retinopathy
+21,PheCode:411,ischemic heart disease
+22,PheCode:411.2,myocardial infarction
+23,PheCode:411.1,unstable angina
+24,PheCode:411.9,other acute and subacute forms
+25,PheCode:411.4,coronary atherosclerosis
+26,PheCode:411.3,angina pectoris
+27,PheCode:411.8,other chronic ischemic heart disease
+28,PheCode:411.41,aneurysm and dissection of heart
+29,PheCode:250.4,abnormal glucose
+30,PheCode:250.41,impaired fasting glucose
+31,PheCode:250.42,other abnormal glucose
+32,PheCode:250.5,glycosuria or acetonuria
+33,PheCode:250.3,insulin pump user
+34,C0026769,multiple sclerosis
