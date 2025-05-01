@@ -2,18 +2,18 @@
 
 ## Overview
 
-**SummaryStats** is an R package designed to facilitate data aggregation, summarization, and visualization, particularly tailored for large healthcare datasets. It is ideal for quality control (QC), exploratory data analysis, and generating insightful visualizations from complex clinical data.
+**SummaryStats** is an R package designed to facilitate data aggregation, summarization, and visualization, particularly tailored for large healthcare datasets.
 
 This package provides two primary functionalities:
 
 1. **Main Summary Statistics Function**: Aggregates raw data, generates total and patient-specific counts, maps medical codes to their ontology descriptions, and visualizes these counts.
 
-2. **Any Code Over Year Function**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
+2. **Codes Over Years Functions**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
 
 ## Features
 
 - Aggregates data into structured, analyzable intermediary files.
-- Provides summary statistics for datasets including medications, lab tests, procedures, diagnoses, and CUIs.
+- Provides summary statistics on medications, lab tests, procedures, diagnoses, and CUIs.
 - Maps medical codes to standardized ontology descriptions.
 - Customizable visualizations.
 - Supports SQLite for efficient data storage and retrieval.
@@ -138,7 +138,7 @@ head(data_null$Patient_Counts, 3)
 ![image](https://github.com/user-attachments/assets/9870fe03-449c-44a4-9d9d-a3d97f11827a)
 
 
-#### Any Code Over Year Example (with year) - Datafile contains n+1(n=the number of codes of interest) tables: one for each code of interest (here n=3) and combined table. All the counts are in patient counts.
+#### Codes Over Years Example (with year) - Datafile contains n+1(n=the number of codes of interest) tables: one for each code of interest (here n=3) and combined table. All the counts are in patient counts.
 ```R
 data_test <- extract_patient_counts_over_years(
   sqlite_file = intermediary_test_db_path,
@@ -231,7 +231,7 @@ plot_visualized_data(
 ![image](https://github.com/user-attachments/assets/ceec6813-cd25-414e-9508-7ede23b2df1e)
 
 
-### Data Visualization - Any Code over years
+### Data Visualization - Codes Over Years
 Here we also use real dataset of RA (Rheumatoid Arthritis) in monthly counts with a comprehensive dictionary.
 
 #### Three codes of interests: "PheCode:714.1", "RXNORM:5487" and "RXNORM:6851"
@@ -259,26 +259,12 @@ plot_patient_counts_over_time(
 ## Detailed Documentation and Vignettes
 
 - [Summary Stats Main Function Vignette](https://github.com/celehs/SummaryStats/blob/main/vignettes/summary_stats.html)
-- [Any Code Over Year Vignette](https://github.com/celehs/SummaryStats/blob/main/vignettes/any_codes_over_year.html)
+- [Codes Over Years Vignette](https://github.com/celehs/SummaryStats/blob/main/vignettes/any_codes_over_year.html)
 
 ## Dependencies
 
 - R (>= 3.5.0)
 - Essential R libraries: `data.table`, `dplyr`, `ggplot2`, `Matrix`, `RSQLite`, and more.
 
-## Bug Reports and Issues
-
-- [Report an Issue](https://github.com/celehs/SummaryStats/issues)
-
-## Authors and Maintainers
-
-- **Thomas Charlon** - Creator, Author ([charlon@protonmail.com](mailto:charlon@protonmail.com))
-- **Enci Cai** - Author ([encicai@hsph.harvard.edu](mailto:encicai@hsph.harvard.edu))
-- **CELEHS Team** ([https://celehs.hms.harvard.edu](https://celehs.hms.harvard.edu))
-
----
 
 **License:** GPL-3
-
-**URL:** [GitHub Repository](https://github.com/celehs/SummaryStats)
-

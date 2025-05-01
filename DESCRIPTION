@@ -5,9 +5,10 @@ Authors@R: c(person("Thomas", "Charlon", role = c("aut", "cre"),
                     email = "charlon@protonmail.com",
                     comment = c(ORCID = "0000-0001-7497-0470")),
              person("Enci", "Cai", role = "aut"),
+             person("Kim", "Greco", role = "aut"),
              person("CELEHS", role = "aut",
                     comment = "<https://celehs.hms.harvard.edu>"))
-Description: This package aggregates data, provides summary statistics and visualizations. It can be suitable for quality control and explortary data analysis. 
+Description: This package aggregates data, provides summary statistics and visualizations.
 Imports:
     data.table,
     dplyr,
