@@ -2,13 +2,15 @@
 
 ## Overview
 
-**SummaryStats** is an R package designed to facilitate data aggregation, summarization, and visualization, particularly tailored for large healthcare datasets.
+**SummaryStats** is an R package developed to support **exploratory analysis** and **quality control** of electronic health record (EHR) data. It is capable of processing structured healthcare data such as **diagnoses**, **medications**, **procedures**, **labs**, and **concept identifiers (CUIs)** to intermediary files which supports downstream analysis. The package allows users to extract frequency counts of these codes across patients and time periods, and visualize trends through customizable summary plots.
 
-This package provides two primary functionalities:
+This package has three major function modules:
 
 1. **Main Summary Statistics Function**: Aggregates raw data, generates total and patient-specific counts, maps medical codes to their ontology descriptions, and visualizes these counts.
 
 2. **Codes Over Years Functions**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
+
+3. **Quality Control (QC) Pipelines**: Processes both Codified and NLP-deerived features by cleaning & formatting to facilitate downstream feeature harmonization and similarity-based validation.
 
 ## Features
 
@@ -30,16 +32,18 @@ Load the package in R:
 library(SummaryStats)
 ```
 
-## Key Functions and Parameters
+## Modules 1-2: Main Summary & Code-over-Time
 
-### 1. `generate_intermediary_sqlite`
+### <ins>Key Functions and Parameters<ins>
+
+#### 1. `generate_intermediary_sqlite`
 - **Description**: Aggregates data from an SQLite database into a processed format.
 - **Parameters**:
   - `con`: Connection to the source SQLite database.
   - `output_sqlite_path`: Path to save the aggregated intermediary SQLite database.
   - `time_column` (optional): Column name indicating time data for aggregation by year.
 
-### 2. `extract_data_for_visualization`
+#### 2. `extract_data_for_visualization`
 - **Description**: Extracts and processes data from the SQLite database for visualization.
 - **Parameters**:
   - `sqlite_file`: Path to the intermediary SQLite file.
@@ -51,7 +55,7 @@ library(SummaryStats)
   - `dict_prefix`: Dictionary prefix for mapping.
   - `dictionary_mapping`: Dictionary used for mapping codes.
 
-### 3. `plot_visualized_data`
+#### 3. `plot_visualized_data`
 - **Description**: Creates histograms for patient and total counts.
 - **Parameters**:
   - `data`: List containing `Total_Counts` and `Patient_Counts`.
@@ -62,14 +66,14 @@ library(SummaryStats)
   - `save_plots`: Logical flag to save plots (default FALSE).
   - `log_scale`: Logical flag for logarithmic scale on y-axis (default FALSE).
 
-### 4. `extract_patient_counts_over_years`
+#### 4. `extract_patient_counts_over_years`
 - **Description**: Extracts yearly patient counts for specified codes.
 - **Parameters**:
   - `sqlite_file`: Path to intermediary SQLite database.
   - `codes_of_interest`: Codes to extract.
   - `dictionary_mapping`: Dictionary for code descriptions.
 
-### 5. `plot_patient_counts_over_time`
+#### 5. `plot_patient_counts_over_time`
 - **Description**: Line plots for patient counts over time.
 - **Parameters**:
   - `data`: Data from `extract_patient_counts_over_years`.
@@ -80,9 +84,8 @@ library(SummaryStats)
   - `auto_breaks`: Logical flag for non-uniform y-axis breaks.
   - `log_scale`: Logical flag for logarithmic y-axis scale.
 
-## Usage Examples
-
-### Simulating Example Data & Dictionary
+### <ins>Usage Examples</ins>
+#### Simulating Example Data & Dictionary
 
 ```R
 library(RSQLite)
@@ -109,7 +112,7 @@ test_db <- dbConnect(SQLite(), test_db_path)
 dbWriteTable(test_db, 'df_monthly', df_ehr, overwrite = TRUE)
 ```
 
-### Generating Intermediary SQLite Database
+### <ins>Generating Intermediary SQLite Database<ins>
 
 #### Without Year Aggregation
 ```R
@@ -123,7 +126,7 @@ intermediary_test_db_path <- tempfile()
 generate_intermediary_sqlite(test_db, output_sqlite_path = intermediary_test_db_path, time_column = "Year")
 ```
 
-### Data Extraction
+### <ins>Data Extraction<ins>
 
 #### Main Function Example (without year) - Datafile contains two tables: Total_Counts and Patient_Counts
 ```R
@@ -153,7 +156,7 @@ head(data_test$combined,6)
 ![image](https://github.com/user-attachments/assets/145d3681-bd98-4a01-aec3-f7601daf93d3)
 
 
-### Data Visualization - Main 
+### <ins>Data Visualization - Main<ins>
 Here we use real dataset of RA (Rheumatoid Arthritis) in monthly counts, which contains information on 6,131 patients. And we load a comprehensive mapping dictionary that includes accurate corresponding Common Ontology Description and Group Description to the Code.
 
 #### Commonly used Scenario: Top 20 
@@ -231,7 +234,7 @@ plot_visualized_data(
 ![image](https://github.com/user-attachments/assets/ceec6813-cd25-414e-9508-7ede23b2df1e)
 
 
-### Data Visualization - Codes Over Years
+### <ins>Data Visualization - Codes Over Years<ins>
 Here we also use real dataset of RA (Rheumatoid Arthritis) in monthly counts with a comprehensive dictionary.
 
 #### Three codes of interests: "PheCode:714.1", "RXNORM:5487" and "RXNORM:6851"
@@ -254,6 +257,12 @@ plot_patient_counts_over_time(
 ```
 ![image](https://github.com/user-attachments/assets/5bf7866d-6ec5-4b71-b93f-561a6a521b1f)
 
+
+## Modules 3: Quality Control Pipelines
+
+### <ins>Key Functions and Parameters<ins> 
+
+### <ins>Usage Examples<ins> 
 
 
 ## Detailed Documentation and Vignettes
