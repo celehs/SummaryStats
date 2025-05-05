@@ -2,15 +2,15 @@
 
 ## Overview
 
-**SummaryStats** is an R package developed to support **exploratory analysis** and **quality control** of electronic health record (EHR) data. It is capable of processing structured healthcare data such as **diagnoses**, **medications**, **procedures**, **labs**, and **concept identifiers (CUIs)** to intermediary files which supports downstream analysis. The package allows users to extract frequency counts of these codes across patients and time periods, and visualize trends through customizable summary plots.
+**SummaryStats** is an R package developed to support **exploratory summary** and **quality control** of electronic health record (EHR) data. It is capable of processing structured healthcare data such as **diagnoses**, **medications**, **procedures**, **labs**, and **concept identifiers (CUIs)** to intermediary files which supports downstream analysis. The package allows users to extract frequency counts of these codes across patients and time periods, and visualize trends through customizable summary plots.
 
-This package has three major function modules:
+This package has two major function modules:
 
-1. **Main Summary Statistics Function**: Aggregates raw data, generates total and patient-specific counts, maps medical codes to their ontology descriptions, and visualizes these counts.
+1. **Quality Control (QC) Pipelines**: Processes both Codified and NLP-derived features by cleaning & formatting to facilitate downstream feeature harmonization and similarity-based validation.
+2. **Summary Statistics Function**:
+   * **Main Summary Function**: Aggregates raw data, generates total and patient-specific counts, maps medical codes to their ontology descriptions, and visualizes these counts.
+   * **Code Over Time Function**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
 
-2. **Codes Over Years Functions**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
-
-3. **Quality Control (QC) Pipelines**: Processes both Codified and NLP-deerived features by cleaning & formatting to facilitate downstream feeature harmonization and similarity-based validation.
 
 ## Features
 
@@ -32,7 +32,15 @@ Load the package in R:
 library(SummaryStats)
 ```
 
-## Modules 1-2: Main Summary & Code-over-Time
+## Module 1: Quality Control Pipelines
+
+### <ins>Key Functions and Parameters<ins> 
+
+### <ins>Usage Examples<ins> 
+
+
+
+## Module 2: Main Summary & Code-over-Time Function
 
 ### <ins>Key Functions and Parameters<ins>
 
@@ -128,7 +136,8 @@ generate_intermediary_sqlite(test_db, output_sqlite_path = intermediary_test_db_
 
 ### <ins>Data Extraction<ins>
 
-#### Main Function Example (without year) - Datafile contains two tables: Total_Counts and Patient_Counts
+#### Main Function Example (without year) 
+- Datafile contains two tables: Total_Counts and Patient_Counts
 ```R
 data_null <- extract_data_for_visualization(
   sqlite_file = intermediary_test_db_path,
@@ -141,7 +150,8 @@ head(data_null$Patient_Counts, 3)
 ![image](https://github.com/user-attachments/assets/9870fe03-449c-44a4-9d9d-a3d97f11827a)
 
 
-#### Codes Over Years Example (with year) - Datafile contains n+1(n=the number of codes of interest) tables: one for each code of interest (here n=3) and combined table. All the counts are in patient counts.
+#### Codes Over Time Example (with year) 
+- Datafile contains n+1(n=the number of codes of interest) tables: one for each code of interest (here n=3) and combined table. All the counts are in patient counts.
 ```R
 data_test <- extract_patient_counts_over_years(
   sqlite_file = intermediary_test_db_path,
@@ -234,7 +244,7 @@ plot_visualized_data(
 ![image](https://github.com/user-attachments/assets/ceec6813-cd25-414e-9508-7ede23b2df1e)
 
 
-### <ins>Data Visualization - Codes Over Years<ins>
+### <ins>Data Visualization - Code Over Time<ins>
 Here we also use real dataset of RA (Rheumatoid Arthritis) in monthly counts with a comprehensive dictionary.
 
 #### Three codes of interests: "PheCode:714.1", "RXNORM:5487" and "RXNORM:6851"
@@ -256,13 +266,6 @@ plot_patient_counts_over_time(
 )
 ```
 ![image](https://github.com/user-attachments/assets/5bf7866d-6ec5-4b71-b93f-561a6a521b1f)
-
-
-## Modules 3: Quality Control Pipelines
-
-### <ins>Key Functions and Parameters<ins> 
-
-### <ins>Usage Examples<ins> 
 
 
 ## Detailed Documentation and Vignettes
