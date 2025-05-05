@@ -6,7 +6,7 @@
 
 This package has two major function modules:
 
-1. **Quality Control (QC) Pipelines**: Processes both Codified and NLP-derived features by cleaning & formatting to facilitate downstream feeature harmonization and similarity-based validation.
+1. **Quality Control (QC) Pipelines**: Processes both Codified and NLP-derived features by cleaning & formatting to facilitate downstream feature harmonization and similarity-based validation.
 2. **Summary Statistics Function**:
    * **Main Summary Function**: Aggregates raw data, generates total and patient-specific counts, maps medical codes to their ontology descriptions, and visualizes these counts.
    * **Code Over Time Function**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
