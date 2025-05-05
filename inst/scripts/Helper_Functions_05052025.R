@@ -336,7 +336,7 @@ get_legend_labels <- function(phecode_pattern, dictionary) {
         !str_detect(feature_id, "\\.\\d{2,}")
     ) %>%
     mutate(feature_label = paste0(feature_id, " | ", description)) %>%
-    arrange(as.numeric(str_remove_all(feature_id, "[A-Za-z:]"))) %>%
+    arrange(as.numeric(str_remove_all(feature_id, "[^0-9]"))) %>%
     pull(feature_label)
 }
 
