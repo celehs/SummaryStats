@@ -336,7 +336,7 @@ get_legend_labels <- function(phecode_pattern, dictionary) {
         !str_detect(feature_id, "\\.\\d{2,}")
     ) %>%
     mutate(feature_label = paste0(feature_id, " | ", description)) %>%
-    arrange(as.numeric(str_remove(feature_id, "PheCode:"))) %>%
+    arrange(as.numeric(str_remove_all(feature_id, "[A-Za-z:]"))) %>%
     pull(feature_label)
 }
 
@@ -493,13 +493,13 @@ plot_target_code_trends <- function(summary_data, target_code, target_cui, dicti
     pull(description)
   cui_description <- ifelse(length(cui_description) > 0, cui_description, "description not found")
   
-  subtitle_text <- paste0("<i><b>Target Phecode:</b> ", target_code, "</i> | <i>", phecode_description,
+  subtitle_text <- paste0("<i><b>Target Code:</b> ", target_code, "</i> | <i>", phecode_description,
                           "<br><b>Target CUI:</b> ", target_cui, "</i> | <i>", cui_description, "</i>")
   
   plot_rates <- ggplot(summary_data, aes(x = as.numeric(year))) +
-    geom_line(aes(y = PheCode_Rate, color = "Target Phecode", linetype = Sample)) +
+    geom_line(aes(y = PheCode_Rate, color = "Target Code", linetype = Sample)) +
     geom_line(aes(y = CUI_Rate, color = "Target CUI", linetype = Sample)) +
-    geom_point(aes(y = PheCode_Rate, color = "Target Phecode"), shape = 16) +
+    geom_point(aes(y = PheCode_Rate, color = "Target Code"), shape = 16) +
     geom_point(aes(y = CUI_Rate, color = "Target CUI"), shape = 16) +
     labs(
       title = "Rates for Target Code and CUI",
@@ -510,9 +510,9 @@ plot_target_code_trends <- function(summary_data, target_code, target_cui, dicti
     scale_x_continuous(breaks = unique(as.numeric(summary_data$year)))
   
   plot_counts <- ggplot(summary_data, aes(x = as.numeric(year))) +
-    geom_line(aes(y = PheCode_Patients, color = "Target Phecode", linetype = Sample)) +
+    geom_line(aes(y = PheCode_Patients, color = "Target Code", linetype = Sample)) +
     geom_line(aes(y = CUI_Patients, color = "Target CUI", linetype = Sample)) +
-    geom_point(aes(y = PheCode_Patients, color = "Target Phecode"), shape = 16) +
+    geom_point(aes(y = PheCode_Patients, color = "Target Code"), shape = 16) +
     geom_point(aes(y = CUI_Patients, color = "Target CUI"), shape = 16) +
     # geom_line(aes(y = Total_Patients, group = Sample), linetype = "dashed", color = "black") +
     labs(
@@ -535,7 +535,7 @@ plot_target_code_correlation <- function(wide_data, target_code, target_cui, sum
     { if (length(.) > 0) . else "description not found" }
   
   subtitle_text <- paste0(
-    "<i><b>Target Phecode:</b> ", target_code, "</i> | <i>", phecode_description,
+    "<i><b>Target Code:</b> ", target_code, "</i> | <i>", phecode_description,
     "<br><b>Target CUI:</b> ", target_cui, "</i> | <i>", cui_description, "</i>"
   )
   
