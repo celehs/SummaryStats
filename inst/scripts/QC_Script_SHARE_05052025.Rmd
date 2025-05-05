@@ -14,7 +14,7 @@ The modules are organized as follows:
 - **Module 2**: Target code and CUI prevalence
 - **Module 3**: Trends for selected phenotypes
 - **Module 4**: Trends and correlation for target code-CUI pair
-- **Module 5**: ONCE feature trends (diagnoses, medications, labs, procedures)
+- **Module 5**: ONCE feature trends (e.g., diagnoses, medications, labs, procedures)
 
 Once **Module 1** (data preparation) is complete, **Modules 2-5** can be run independently, in any order.
 
@@ -275,7 +275,7 @@ print(results_module4$correlation_plot)
 
 ---
 
-## Module 5: ONCE Feature Trends (Diagnoses, Medications, Labs, Procedures)
+## Module 5: ONCE Feature Trends 
 
 This module identifies the top five ONCE-derived features most similar to a user-specified target phenotype (based on ONCE similarity scores) across multiple clinical domains, including diagnoses, medications, labs, procedures, and CUIs. For each domain, the module generates annual trend plots showing the rate and count of patients associated with the top related features. It also provides bar plots summarizing total patient counts across all years. These visualizations help evaluate which features are most related to the target concept and whether their temporal trends are consistent and informative. ONCE similarity dictionaries can be loaded automatically from the O2 cluster or specified manually using file paths.
 
