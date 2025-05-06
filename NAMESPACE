@@ -2,7 +2,7 @@
 
 export("%$%")
 export("%<>%")
-export("%>%")11
+export("%>%")
 export(extract_data_for_visualization)
 export(extract_patient_counts_over_years)
 export(generate_intermediary_sqlite)
