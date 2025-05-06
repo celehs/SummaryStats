@@ -43,6 +43,6 @@
   )
   
   # Step 5: Check that plot is created
-  expect_true(is.ggplot(plot_obj))
+  expect_true(ggplot2::is.ggplot(plot_obj))
   expect_true(all(c("Year", "Patient_Count", "Parent_Code", "Name") %in% colnames(data_test$combined)))
 
