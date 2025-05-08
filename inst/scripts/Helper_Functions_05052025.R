@@ -76,17 +76,31 @@ clean_ONCE_data <- function(target_code, O2 = TRUE, path_code = NULL, path_nlp =
 }
 
 clean_raw_data <- function(df, date_col = "start_date", id_col = "feature_id") {
-  df %>%
+  df <- df %>%
+    mutate({{ date_col }} := as.character(.data[[date_col]]))
+  
+  bad_dates <- df %>%
+    filter(!str_detect(.data[[date_col]], "^\\d{4}$|^\\d{4}-\\d{2}-\\d{2}$"))
+  
+  if (nrow(bad_dates) > 0) {
+    warning(nrow(bad_dates), " rows have invalid date format in `", date_col, "` and were set to NA.")
+  }
+  
+  df <- df %>%
     mutate(
       patient_num = as.character(patient_num),
-      !!date_col := as.character(.data[[date_col]]),
-      year = ifelse(
-        nchar(.data[[date_col]]) == 4,
-        as.character(.data[[date_col]]),
-        format(as.Date(.data[[date_col]]), "%Y")
+      year = case_when(
+        str_detect(.data[[date_col]], "^\\d{4}$") ~ .data[[date_col]],
+        str_detect(.data[[date_col]], "^\\d{4}-\\d{2}-\\d{2}$") ~ as.character(
+          lubridate::year(suppressWarnings(lubridate::ymd(.data[[date_col]])))
+        ),
+        TRUE ~ NA_character_
       ),
-      !!id_col := str_replace(.data[[id_col]], "CCS-PCS", "CCS")
+      {{ id_col }} := str_replace(.data[[id_col]], "CCS-PCS", "CCS")
     )
+  
+  df %>%
+    select(patient_num, year, {{ id_col }})
 }
 
 clean_data <- function(paths, date_col = "start_date", id_col = "feature_id") {
@@ -108,19 +122,6 @@ clean_dictionary <- function(dictionary_path) {
       description = tolower(description)
     )
 }
-
-# generate_sample_size_table <- function(data_inputs, sample_labels) {
-#   sample_sizes <- lapply(names(data_inputs), function(name) {
-#     data <- data_inputs[[name]]
-#     data_type <- ifelse(grepl("nlp", name), "NLP", "Codified")
-#     sample_key <- ifelse(grepl("2", name), "2", "1")
-#     sample_label <- sample_labels[[sample_key]]
-#     
-#     data.frame(Sample = sample_label, Dataset = data_type, `Number of Patients` = length(unique(data$patient_num)))
-#   })
-#   
-#   bind_rows(sample_sizes)
-# }
 
 # ----------------------- MODULE 2 HELPERS -----------------------
 
@@ -308,7 +309,7 @@ module2 <- function(data_inputs, target_code, target_cui, sample_labels) {
   ))
 }
 
-# ----------------------- MODULE 3 HELPERS ----------------------- 
+# ----------------------- MODULE 3 HELPERS -----------------------
 
 generate_phecode_summary <- function(data) {
   total_patients <- data %>%
@@ -329,26 +330,58 @@ get_phecode_description <- function(phecode_pattern, dictionary) {
   ifelse(length(description) == 0, "description not found", description)
 }
 
-get_legend_labels <- function(phecode_pattern, dictionary) {
+get_legend_labels <- function(included_codes, dictionary) {
   dictionary %>%
-    filter(
-      str_detect(feature_id, phecode_pattern) &
-        !str_detect(feature_id, "\\.\\d{2,}")
-    ) %>%
+    filter(feature_id %in% included_codes) %>%
     mutate(feature_label = paste0(feature_id, " | ", description)) %>%
     arrange(as.numeric(str_remove_all(feature_id, "[^0-9]"))) %>%
     pull(feature_label)
 }
 
-plot_trends_v2 <- function(data_list, phecode_pattern, dictionary, y_var, y_label, title_suffix, sample_labels) {
+get_ordered_code_info <- function(included_codes, dictionary) {
+  ordered_codes <- included_codes[order(as.numeric(str_replace_all(included_codes, "[^0-9.]", "")))]
+  
+  code_info <- dictionary %>%
+    filter(feature_id %in% ordered_codes) %>%
+    mutate(feature_label = paste0(feature_id, " | ", description)) %>%
+    arrange(factor(feature_id, levels = ordered_codes))
+  
+  labels <- code_info$feature_label
+  names(labels) <- code_info$feature_id
+  
+  colors <- setNames(RColorBrewer::brewer.pal(n = length(ordered_codes), name = "Set2"), ordered_codes)
+  
+  list(
+    ordered_codes = ordered_codes,
+    legend_labels = labels,
+    color_mapping = colors
+  )
+}
+
+plot_trends_v2 <- function(data_list, phecode_pattern, dictionary, y_var, y_label, title_suffix, sample_labels, custom_children = NULL) {
   phecode_description <- get_phecode_description(phecode_pattern, dictionary)
-  legend_labels <- get_legend_labels(phecode_pattern, dictionary)
+  
+  if (!is.null(custom_children) && phecode_pattern %in% names(custom_children)) {
+    included_codes <- c(phecode_pattern, custom_children[[phecode_pattern]])
+  } else {
+    included_codes <- dictionary %>%
+      filter(
+        str_detect(feature_id, phecode_pattern) &
+          !str_detect(feature_id, "\\.\\d{2,}")
+      ) %>%
+      pull(feature_id)
+  }
+  
+  code_info <- get_ordered_code_info(included_codes, dictionary)
   
   combined <- purrr::imap_dfr(data_list, function(df, key) {
     df %>% mutate(Sample = sample_labels[[key]])
   }) %>%
-    filter(str_detect(feature_id, phecode_pattern) & !str_detect(feature_id, "\\.\\d{2,}")) %>%
-    mutate(is_parent = ifelse(feature_id == phecode_pattern, "Parent", "Child"))
+    filter(feature_id %in% code_info$ordered_codes) %>%
+    mutate(
+      is_parent = ifelse(feature_id == phecode_pattern, "Parent", "Child"),
+      feature_id = factor(feature_id, levels = code_info$ordered_codes)
+    )
   
   ggplot() +
     geom_line(data = combined,
@@ -360,63 +393,174 @@ plot_trends_v2 <- function(data_list, phecode_pattern, dictionary, y_var, y_labe
                aes(x = year, y = !!sym(y_var), color = feature_id,
                    group = interaction(feature_id, Sample))) +
     scale_linetype_manual(values = setNames(c("solid", "dashed")[seq_along(data_list)], unname(sample_labels[seq_along(data_list)]))) +
-    scale_color_brewer(palette = "Set2", labels = legend_labels) +
+    scale_color_manual(values = code_info$color_mapping, labels = code_info$legend_labels, name = "Code") +
     scale_size_manual(values = c("Parent" = 2, "Child" = 1), guide = "none") +
     labs(
       title = paste(title_suffix, "for Parent-Child Phecodes"),
       subtitle = paste0("<b><i>", phecode_pattern, "</i></b> | <i>", phecode_description, "</i>"),
       x = "",
-      y = y_label,
-      color = "Code",
-      linetype = "Sample"
+      y = y_label
     ) +
     theme_global
 }
 
-plot_total_patients_v2 <- function(data_list, phecode_pattern, dictionary, sample_labels) {
+plot_total_patients_v2 <- function(data_list, phecode_pattern, dictionary, sample_labels, custom_children = NULL) {
+  if (!is.null(custom_children) && phecode_pattern %in% names(custom_children)) {
+    included_codes <- c(phecode_pattern, custom_children[[phecode_pattern]])
+  } else {
+    included_codes <- dictionary %>%
+      filter(
+        str_detect(feature_id, phecode_pattern) &
+          !str_detect(feature_id, "\\.\\d{2,}")
+      ) %>%
+      pull(feature_id)
+  }
+  
+  code_info <- get_ordered_code_info(included_codes, dictionary)
+  
   all_data <- purrr::imap_dfr(data_list, function(data, key) {
     label <- sample_labels[[key]]
     data %>%
-      filter(str_detect(feature_id, phecode_pattern) & !str_detect(feature_id, "\\.\\d{2,}")) %>%
+      filter(feature_id %in% code_info$ordered_codes) %>%
       group_by(feature_id) %>%
       summarise(Total_Patients = n_distinct(patient_num), .groups = "drop") %>%
       left_join(dictionary, by = "feature_id") %>%
-      mutate(feature_label = paste0(feature_id, " | ", description), Dataset = label)
+      mutate(Dataset = label)
   })
+  
+  all_data$feature_id <- factor(all_data$feature_id, levels = code_info$ordered_codes)
+  all_data <- all_data %>% mutate(x_pos = as.numeric(feature_id))
   
   labels <- unique(all_data$Dataset)
   
-  ggplot(all_data, aes(x = feature_label, y = Total_Patients, fill = feature_label)) +
-    geom_bar(data = all_data %>% filter(Dataset == labels[2]),
+# Extract the factor levels for feature_id (these match what's actually plotted)
+x_levels <- levels(all_data$feature_id)
+
+# Create numeric positions for each factor level (used on x-axis)
+x_breaks <- seq_along(x_levels)
+
+# Make sure labels match those levels
+x_labels <- unname(code_info$legend_labels[x_levels])
+
+# Use ggplot with corrected breaks and labels
+ggplot(all_data, aes(x = x_pos, y = Total_Patients, fill = feature_id)) +
+  geom_bar(data = all_data %>% filter(Dataset == labels[2]),
+           stat = "identity", position = position_identity(),
+           width = 0.4, aes(x = x_pos + 0.1),
+           linetype = "dashed", color = "black") +
+  geom_bar(data = all_data %>% filter(Dataset == labels[1]),
+           stat = "identity", position = position_identity(),
+           width = 0.4, aes(x = x_pos - 0.1),
+           color = "black") +
+  scale_x_continuous(
+    breaks = x_breaks,
+    labels = x_labels
+  ) +
+  scale_fill_manual(
+    values = code_info$color_mapping[x_levels],
+    labels = x_labels,
+    name = "Code"
+  ) +
+  labs(x = "", y = "Total Patients Across all Years") +
+  theme_bar
+
+}
+
+
+
+
+
+
+
+plot_total_patients_v2 <- function(data_list, phecode_pattern, dictionary, sample_labels, custom_children = NULL) {
+  # Step 1: Filter custom_children to only codes present in the data
+  all_feature_ids <- unique(unlist(lapply(data_list, function(df) unique(df$feature_id))))
+  if (!is.null(custom_children) && phecode_pattern %in% names(custom_children)) {
+    valid_children <- intersect(custom_children[[phecode_pattern]], all_feature_ids)
+    included_codes <- c(phecode_pattern, valid_children)
+  } else {
+    included_codes <- dictionary %>%
+      filter(
+        str_detect(feature_id, phecode_pattern) &
+          !str_detect(feature_id, "\\.\\d{2,}")
+      ) %>%
+      pull(feature_id)
+  }
+  
+  code_info <- get_ordered_code_info(included_codes, dictionary)
+  
+  # Step 2: Summarize total patients per code across all years
+  all_data <- purrr::imap_dfr(data_list, function(data, key) {
+    label <- sample_labels[[key]]
+    data %>%
+      filter(feature_id %in% code_info$ordered_codes) %>%
+      group_by(feature_id) %>%
+      summarise(Total_Patients = n_distinct(patient_num), .groups = "drop") %>%
+      left_join(dictionary, by = "feature_id") %>%
+      mutate(Dataset = label)
+  })
+  
+  # Step 3: Clean up factor levels and axis setup
+  codes_present <- unique(all_data$feature_id)
+  ordered_codes <- code_info$ordered_codes[code_info$ordered_codes %in% codes_present]
+  all_data$feature_id <- factor(all_data$feature_id, levels = ordered_codes)
+  all_data <- all_data %>% mutate(x_pos = as.numeric(feature_id))
+  x_levels <- levels(all_data$feature_id)
+  x_breaks <- seq_along(x_levels)
+  x_labels <- unname(code_info$legend_labels[x_levels])
+  color_mapping <- code_info$color_mapping[x_levels]
+  
+  # Step 4: Get dataset names
+  dataset_names <- unique(all_data$Dataset)
+  if (length(dataset_names) != 2) {
+    stop("plot_total_patients_v2 requires exactly 2 datasets.")
+  }
+  
+  # Step 5: Plot
+  ggplot(all_data, aes(x = x_pos, y = Total_Patients, fill = feature_id)) +
+    geom_bar(data = all_data %>% filter(Dataset == dataset_names[2]),
              stat = "identity", position = position_identity(),
-             width = 0.4, aes(x = as.numeric(as.factor(feature_label)) + 0.1),
+             width = 0.4, aes(x = x_pos + 0.1),
              linetype = "dashed", color = "black") +
-    geom_bar(data = all_data %>% filter(Dataset == labels[1]),
+    geom_bar(data = all_data %>% filter(Dataset == dataset_names[1]),
              stat = "identity", position = position_identity(),
-             width = 0.4, aes(x = as.numeric(as.factor(feature_label)) - 0.1),
+             width = 0.4, aes(x = x_pos - 0.1),
              color = "black") +
-    scale_x_continuous(breaks = unique(as.numeric(as.factor(all_data$feature_label))),
-                       labels = unique(all_data$feature_label)) +
-    labs(x = "", y = "Total Patients Across all Years") +
-    scale_fill_brewer(palette = "Set2") +
+    scale_x_continuous(
+      breaks = x_breaks,
+      labels = x_labels
+    ) +
+    scale_fill_manual(
+      values = color_mapping,
+      labels = x_labels,
+      name = "Code"
+    ) +
+    labs(x = "", y = "Total Patients Across All Years") +
     theme_bar
 }
 
+
+
+
+
+
+
+
 # Final wrapper function
-module3 <- function(data_inputs, dictionary, sample_labels, phecodes) {
-  # 3.a. Prepare codified data list using sample_labels
+module3 <- function(data_inputs, dictionary, sample_labels, phecodes, custom_children = NULL) {
+  # Prepare codified data list using sample_labels
   codified_data_list <- list()
   if (!is.null(data_inputs$codified1)) codified_data_list[["1"]] <- data_inputs$codified1
   if (!is.null(data_inputs$codified2)) codified_data_list[["2"]] <- data_inputs$codified2
   
-  # 3.b. Generate Phecode summaries
+  # Generate Phecode summaries
   phecode_data <- lapply(codified_data_list, generate_phecode_summary)
   
-  # 3.c. Loop through Phecodes and generate plots
+  # Loop through Phecodes and generate plots
   plots <- lapply(phecodes, function(p) {
-    rate_plot <- plot_trends_v2(phecode_data, p, dictionary, "Rate", "Rate", "Rates", sample_labels)
-    count_plot <- plot_trends_v2(phecode_data, p, dictionary, "Patients", "Patients per Year", "Patient Counts", sample_labels)
-    bar_plot <- plot_total_patients_v2(codified_data_list, p, dictionary, sample_labels)
+    rate_plot <- plot_trends_v2(phecode_data, p, dictionary, "Rate", "Rate", "Rates", sample_labels, custom_children)
+    count_plot <- plot_trends_v2(phecode_data, p, dictionary, "Patients", "Patients per Year", "Patient Counts", sample_labels, custom_children)
+    bar_plot <- plot_total_patients_v2(codified_data_list, p, dictionary, sample_labels, custom_children)
     
     combined_plot <- cowplot::plot_grid(
       count_plot + theme(legend.position = "none"),
@@ -484,7 +628,6 @@ summarize_target_code_trends <- function(codified_list, nlp_list, target_code, t
   list(combined = combined_summary, wide = combined_wide)
 }
 
-
 plot_target_code_trends <- function(summary_data, target_code, target_cui, dictionary_code, dictionary_nlp) {
   phecode_description <- get_phecode_description(gsub("Phecode:", "", target_code), dictionary_code)
   
@@ -543,7 +686,9 @@ plot_target_code_correlation <- function(wide_data, target_code, target_cui, sum
     group_by(Sample, year) %>%
     summarise(Correlation = {
       data_year <- pick(everything())
-      if (sd(data_year[[target_code]], na.rm = TRUE) == 0 || sd(data_year[[target_cui]], na.rm = TRUE) == 0) {
+      if (nrow(data_year) < 5 ||
+          sd(data_year[[target_code]], na.rm = TRUE) == 0 || 
+          sd(data_year[[target_cui]], na.rm = TRUE) == 0) {
         NA
       } else {
         cor(data_year[[target_code]], data_year[[target_cui]], use = "pairwise.complete.obs", method = "spearman")
@@ -564,9 +709,9 @@ plot_target_code_correlation <- function(wide_data, target_code, target_cui, sum
 }
 
 # Final wrapper function
-
 module4 <- function(data_inputs, target_code, target_cui, dictionary, sample_labels) {
-  # 4.a. Build codified and NLP lists from sample labels
+  
+  # Build codified and NLP lists from sample labels
   codified_list <- list()
   nlp_list <- list()
   if (!is.null(data_inputs$codified1)) codified_list[["1"]] <- data_inputs$codified1
@@ -574,7 +719,7 @@ module4 <- function(data_inputs, target_code, target_cui, dictionary, sample_lab
   if (!is.null(data_inputs$nlp1)) nlp_list[["1"]] <- data_inputs$nlp1
   if (!is.null(data_inputs$nlp2)) nlp_list[["2"]] <- data_inputs$nlp2
   
-  # 4.b. Summarize across codified and NLP
+  # Summarize across codified and NLP
   summarized <- summarize_target_code_trends(
     codified_list = codified_list,
     nlp_list = nlp_list,
@@ -583,7 +728,7 @@ module4 <- function(data_inputs, target_code, target_cui, dictionary, sample_lab
     sample_labels = sample_labels 
   )
   
-  # 4.c. Plot trends across samples/institutions
+  # Plot trends across samples/institutions
   trend_plots <- plot_target_code_trends(
     summary_data = summarized$combined,
     target_code = target_code,
@@ -592,7 +737,7 @@ module4 <- function(data_inputs, target_code, target_cui, dictionary, sample_lab
     dictionary_nlp = dictionary
   )
   
-  # 4.d. Plot correlation across samples/institutions
+  # Plot correlation across samples/institutions
   correlation_plot <- plot_target_code_correlation(
     wide_data = summarized$wide,
     target_code = target_code,
@@ -609,27 +754,39 @@ module4 <- function(data_inputs, target_code, target_cui, dictionary, sample_lab
   ))
 }
 
-
 # ----------------------- MODULE 5 HELPERS -----------------------
 
+get_similarity_ordered_colors <- function(descriptions_df) {
+  desc_ordered <- descriptions_df %>%
+    arrange(desc(target_similarity)) %>%
+    mutate(description_label = paste0(feature_id, " | ", description, " [", round(target_similarity, 3), "]"))
+  
+  labels <- desc_ordered$description_label
+  names(labels) <- desc_ordered$feature_id
+  
+  colors <- setNames(RColorBrewer::brewer.pal(n = length(labels), name = "Set2"), labels)
+  
+  list(
+    labels = labels,
+    color_map = colors
+  )
+}
+
 plot_related_code_trends_v2 <- function(Type, target_code, target_cui, codified_list, nlp_list, sample_labels, ONCE,
-                                          type_dict = list("Diagnosis" = "PheCode", 
-                                                           "Medication" = "RXNORM", 
-                                                           "Lab" = c("LOINC","ShortName","Other Lab"), 
-                                                           "Procedure" = "CCS")) {
-    
+                                        type_dict = list("Diagnosis" = "PheCode", 
+                                                         "Medication" = "RXNORM", 
+                                                         "Lab" = c("LOINC","ShortName","Other Lab"), 
+                                                         "Procedure" = "CCS")) {
+  
   if (!(Type %in% c(names(type_dict), "CUI"))) return(list(NULL, paste("Invalid Type:", Type)))
   
-  # Determine context
   is_cui <- (Type == "CUI")
   source_list <- if (is_cui) nlp_list else codified_list
   keyword <- if (!is_cui) type_dict[[Type]] else NULL
   target_feature <- if (is_cui) target_cui else target_code
   dict <- if (is_cui) ONCE$nlp else ONCE$code
   
-  # Get top 5 similar features
   related_features <- dict %>%
-    # filter((if (is_cui) TRUE else str_detect(feature_id, keyword)) & feature_id != target_feature) %>%
     filter((if (is_cui) TRUE else str_detect(feature_id, paste0(keyword, collapse = "|"))) & feature_id != target_feature) %>%
     filter(feature_id %in% unlist(lapply(source_list, \(df) df$feature_id))) %>%
     arrange(desc(target_similarity)) %>%
@@ -648,7 +805,6 @@ plot_related_code_trends_v2 <- function(Type, target_code, target_cui, codified_
       mutate(Sample = sample_labels[[key]])
   })
   
-  # Total patient counts
   total_data <- purrr::imap_dfr(codified_list, function(df, key) {
     df %>%
       group_by(year) %>%
@@ -660,27 +816,27 @@ plot_related_code_trends_v2 <- function(Type, target_code, target_cui, codified_
     left_join(total_data, by = c("year", "Sample")) %>%
     mutate(Rate = Patients / Total_Patients)
   
-  # Description labeling
   descriptions <- dict %>%
     filter(feature_id %in% selected_features) %>%
-    mutate(description_label = paste0(feature_id, " | ", description, " [", round(target_similarity, 3), "]")) %>%
-    arrange(desc(target_similarity))
+    arrange(desc(target_similarity)) %>%
+    mutate(description_label = paste0(feature_id, " | ", description, " [", round(target_similarity, 3), "]"))
+  
+  color_info <- get_similarity_ordered_colors(descriptions)
   
   combined_data <- combined_data %>%
     left_join(descriptions, by = "feature_id") %>%
     mutate(
-      description_label = factor(description_label, levels = unique(descriptions$description_label)),
+      description_label = factor(description_label, levels = color_info$labels),
       is_target = ifelse(feature_id == target_feature, "Target", "Other")
     )
   
-  # Bar plot data (complete grid)
   bar_data <- expand.grid(
     feature_id = selected_features,
     Sample = as.character(unname(sample_labels)),
     stringsAsFactors = FALSE
   ) %>%
     left_join(descriptions, by = "feature_id") %>%
-    mutate(description_label = factor(description_label, levels = levels(combined_data$description_label)))
+    mutate(description_label = factor(description_label, levels = color_info$labels))
   
   bar_counts <- purrr::imap_dfr(source_list, function(df, key) {
     df %>%
@@ -691,53 +847,39 @@ plot_related_code_trends_v2 <- function(Type, target_code, target_cui, codified_
       mutate(Sample = sample_labels[[key]])
   })
   
-  bar_counts <- bar_counts %>% mutate(Sample = as.character(Sample))
-  
   bar_data <- bar_data %>%
     left_join(bar_counts, by = c("feature_id", "Sample")) %>%
-    mutate(Total_Patients = replace_na(Total_Patients, 0))
+    mutate(Total_Patients = replace_na(Total_Patients, 0)) %>%
+    filter(Total_Patients > 0)
   
   target_desc <- descriptions$description[descriptions$feature_id == target_feature]
   subtitle_text <- paste0("<i><b>Target ", ":</b> ", target_feature, "</i> | <i>", target_desc, "</i>")
   
-  # Color palette
-  color_palette <- scale_color_brewer(palette = "Set2")
-  fill_palette <- scale_fill_brewer(palette = "Set2")
-  
-  # Line plot (Rate)
   plot_rates <- ggplot(combined_data, aes(x = as.numeric(year), y = Rate,
                                           color = description_label, linetype = Sample,
                                           group = interaction(feature_id, Sample), size = is_target)) +
     geom_line() + geom_point(size = 3) +
     scale_size_manual(values = c("Target" = 2, "Other" = 1), guide = "none") +
     scale_linetype_manual(values = c("solid", "dashed")[seq_along(unique(combined_data$Sample))]) +
-    color_palette +
+    scale_color_manual(values = color_info$color_map) +
     labs(title = paste("Rates for Related", Type, "Codes"),
          subtitle = subtitle_text,
          x = "", y = "Rate", color = Type, linetype = "Sample") +
     theme_global +
     scale_x_continuous(breaks = unique(as.numeric(combined_data$year)))
   
-  # Line plot (Counts)
   plot_counts <- ggplot(combined_data, aes(x = as.numeric(year), y = Patients,
                                            color = description_label, linetype = Sample,
                                            group = interaction(feature_id, Sample), size = is_target)) +
     geom_line() + geom_point(size = 3) +
     scale_size_manual(values = c("Target" = 2, "Other" = 1), guide = "none") +
     scale_linetype_manual(values = c("solid", "dashed")[seq_along(unique(combined_data$Sample))]) +
-    color_palette +
+    scale_color_manual(values = color_info$color_map) +
     labs(title = paste("Patient Counts for Related", Type, "Codes"),
          subtitle = subtitle_text,
          x = "", y = "Patients per Year", color = Type, linetype = "Sample") +
     theme_global +
     scale_x_continuous(breaks = unique(as.numeric(combined_data$year)))
-  
-  # Bar plot (no legend)
-  bar_data <- bar_data %>% filter(Total_Patients > 0)
-  
-  if (is.null(sample_labels[["2"]])) {
-    sample_labels[["2"]] <- 0
-  }
   
   plot_bar <- ggplot(bar_data, aes(fill = description_label)) +
     geom_bar(data = bar_data %>% filter(Sample == sample_labels[["2"]]),
@@ -750,15 +892,13 @@ plot_related_code_trends_v2 <- function(Type, target_code, target_cui, codified_
              color = "black") +
     scale_x_continuous(breaks = unique(as.numeric(bar_data$description_label)),
                        labels = levels(bar_data$description_label)) +
-    fill_palette +
+    scale_fill_manual(values = color_info$color_map) +
     labs(y = "Total Patients Across All Years", x = "") +
     theme_bar +
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           legend.position = "none")
   
-  
-  # Combined count plot (line + bar side-by-side, no legend)
   combined_plot <- cowplot::plot_grid(
     plot_counts + theme(legend.position = "none"),
     plot_bar,

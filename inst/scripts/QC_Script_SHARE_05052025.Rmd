@@ -67,12 +67,12 @@ Below is an example of a correctly formatted data dictionary:
 
 To run **Module 5**, you must provide a ONCE-derived feature similarity dictionary. This identifies the most relevant features (e.g., diagnoses, labs, medications) based on similarity to your selected target code and CUI. If you are not running this script on the O2 cluster, you will need to manually download these files from the ONCE webapp:
 
-- Access the tool here: [ONCE Webapp](https://shiny.parse-health.org/ONCE/)
-- Specify your search item (e.g., "Multiple Sclerosis")
-- Download "Full Results" for NLP and codified features 
-- Provide manual file paths to:
-  - ONCE codified dictionary
-  - ONCE NLP dictionary
+1. Access the tool here: [ONCE Webapp](https://shiny.parse-health.org/ONCE/)
+2. Specify your search item (e.g., "Multiple Sclerosis")
+3. Download "Full Results" for NLP and codified features 
+4. Provide manual file paths to:
+    - ONCE codified dictionary
+    - ONCE NLP dictionary
 
 ---
 
@@ -141,7 +141,7 @@ This module loads and cleans the raw input datasets for downstream analysis. It 
 
 1. `paths`: A named list of file paths to raw data CSV files
     a. `paths$codified1`, `paths$nlp1` (required) – Sample 1
-    b. `paths$codified2`, `paths$nlp2` (required) – Sample 2
+    b. `paths$codified2`, `paths$nlp2` (optional) – Sample 2
 2. `dictionary_path`: Path to a CSV file containing the raw data dictionary
 
 #### *Outputs*
@@ -204,7 +204,9 @@ print(results_module2$codified_plot)
 
 ## Module 3: Trends for Selected Phenotypes (Parent-Child Correlations)
 
-This module analyzes codified feature trends for a user-specified set of parent Phecodes, automatically including their child Phecodes (e.g., PheCode:250.1, PheCode:250.2) to assess hierarchical consistency. For each parent Phecode, it calculates annual prevalence rates and total patient counts, then generates visualizations to examine whether child features follow similar patterns across time and across datasets. These plots support quality control by highlighting potentially inconsistent or missing hierarchical relationships.We recommend starting with Phecodes 411 (Ischemic Heart Disease), 250 (Diabetes Mellitus), and 296 (Mood Disorders) — common conditions with well-established coding structures.
+This module analyzes codified feature trends for a set of parent Phecodes, examining whether their associated child Phecodes follow similar temporal patterns across datasets. By default, it automatically includes first-level child codes (e.g., PheCode:250.1, PheCode:250.2), excluding deeper levels like PheCode:250.11. Alternatively, users may supply an explicit list of child codes via the `custom_children` argument to customize the hierarchy being evaluated. For each Phecode, the module calculates annual patient counts, prevalence rates, and total counts across all years, and visualizes these trends across datasets. Inconsistencies in child-parent trajectories may indicate mapping or extraction issues in the source data.
+
+We recommend starting with Phecodes 411 (Ischemic Heart Disease), 250 (Diabetes Mellitus), and 296 (Mood Disorders) -- common conditions with well-defined hierarchical structures. When defining a custom hierarchy, it may be helpful to consult this [Phecode Map](https://phewascatalog.org/phewas/#phe12) to identify relevant parent-child relationships.
 
 #### *Inputs*
 
@@ -212,6 +214,7 @@ This module analyzes codified feature trends for a user-specified set of parent 
 2. `dictionary`: Cleaned feature dictionary from Module 1 
 3. `sample_labels`: A named list labeling the samples (e.g., list("1" = "Site A", "2" = "Site B"))
 4. `phecodes`: A character vector of parent Phecodes to analyze (e.g., c("PheCode:411", "PheCode:250"))
+5. `custom_children`: (Optional) A named list of child codes to include for each parent (e.g., list("PheCode:411" = c("PheCode:411.1", "PheCode:411.2")))
 
 #### *Outputs*
 
@@ -224,8 +227,29 @@ For each parent Phecode:
 
 ```{r module3}
 
-# Generate module 3 results
-results_module3 <- module3(data_inputs, dictionary, sample_labels, phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"))
+# Example 1: Generate module 3 results (use default child codes based on decimal hierarchy)
+
+results_module3 <- module3(data_inputs, dictionary, sample_labels,
+                           phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"),
+                           custom_children = NULL)
+
+# Display plots
+for (res in results_module3) {
+  print(res$rate_plot)
+  print(res$combined_plot)
+}
+
+# Example 2: Generate module 3 results (define custom child codes)
+
+custom_children <- list(
+  "PheCode:411" = c("PheCode:411.1", "PheCode:411.2", "PheCode:411.3"),
+  "PheCode:250" = c("PheCode:250.1", "PheCode:250.11", "PheCode:250.2", "PheCode:250.3"),
+  "PheCode:296" = c("PheCode:296.1", "PheCode:296.2", "PheCode:296.22")
+)
+
+results_module3 <- module3(data_inputs, dictionary, sample_labels,
+                           phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"),
+                           custom_children = custom_children)
 
 # Display plots
 for (res in results_module3) {
@@ -271,7 +295,7 @@ print(results_module4$correlation_plot)
 
 ```
 
-*Notes: (1) Rates are calculated as the number of patients with the target code per calendar year divided by the total number of patients with any code in the same year; (2) Intra-patient correlations are calculated as the Spearman correlation between the code counts for patients in the same year*
+*Notes: (1) Rates are calculated as the number of patients with the target code per calendar year divided by the total number of patients with any code in the same year; (2) Intra-patient correlations are calculated as the Spearman correlation between the code counts for patients in the same year, for years with at least 5 observations.*
 
 ---
 
