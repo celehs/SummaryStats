@@ -25,13 +25,16 @@ Imports:
     RColorBrewer,
     cowplot,
     ggtext,
-    knitr,
-    gridExtra
+    gridExtra,
+    knitr
 Depends:
     R (>= 3.5.0)
 Suggests:
+    testthat (>= 3.0.0),
     rmarkdown,
-    testthat
+    readr,
+    flexdashboard,
+    reshape2
 VignetteBuilder: knitr
 License: GPL-3
 Encoding: UTF-8

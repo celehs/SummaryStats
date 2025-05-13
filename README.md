@@ -11,7 +11,6 @@ This package has two major function modules:
    * **Main Summary Function**: Aggregates raw data, generates total and patient-specific counts, maps medical codes to their ontology descriptions, and visualizes these counts.
    * **Code Over Time Function**: Extends the primary capabilities by capturing and visualizing data over specified timeframes, enabling trend analysis and temporal insights.
 
-
 ## Features
 
 - Aggregates data into structured, analyzable intermediary files.
@@ -37,8 +36,6 @@ library(SummaryStats)
 ### <ins>Key Functions and Parameters<ins> 
 
 ### <ins>Usage Examples<ins> 
-
-
 
 ## Module 2: Main Summary & Code-over-Time Function
 
@@ -279,4 +276,36 @@ plot_patient_counts_over_time(
 - Essential R libraries: `data.table`, `dplyr`, `ggplot2`, `Matrix`, `RSQLite`, and more.
 
 
-**License:** GPL-3
+**License:** GPL-3 
+
+## Shiny App Setup and Deployment - Co-occurrence checking
+
+### Required Files
+The Shiny app requires a dictionary mapping file to function properly. Due to its large size (>200MB), this file is not included in the repository.
+
+#### Dictionary File Setup
+1. Download the dictionary mapping file (`dictionary_mapping_v3.4.tsv`) from one of these sources:
+   - O2 Server: `/n/data1/hsph/biostat/celehs/lab/datasets/dictionaries/dictionary_mapping_v3.4.tsv`
+   - Dropbox: [Download dictionary_mapping_v3.4.tsv.gz](https://www.dropbox.com/scl/fi/smrb7mm9hmlgk6ss4symi/dictionary_mapping_v3.4.tsv.gz?dl=0&e=1&rlkey=80b97b4894wwsn3u50b91jtz2&st=6druitgo)
+   
+   Note: If downloading from Dropbox, you'll need to decompress the .gz file after downloading.
+
+2. Place the file in the `shiny-server` directory of your cloned repository:
+   ```
+   SummaryStats/
+   └── shiny-server/
+       ├── app.R
+       └── dictionary_mapping_v3.4.tsv  # Place the downloaded file here
+   ```
+3. This location is required for the Docker setup to work correctly - the app will not function without the dictionary file in this exact location
+
+### Running with Docker
+Once you have placed the dictionary file in the correct location, you can run the app using Docker:
+
+```bash
+docker compose up --build shiny
+```
+
+The app will be available at http://localhost:3838
+
+Note: The Docker setup will only work if the dictionary file is present in the correct location (`shiny-server/dictionary_mapping_v3.4.tsv`). 

@@ -1,3 +1,5 @@
 library(testthat)
 library(SummaryStats)
-test_check('SummaryStats')
+
+# Run all tests including those in subdirectories
+test_check('SummaryStats', reporter = "summary")
