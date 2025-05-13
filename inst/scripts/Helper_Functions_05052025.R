@@ -256,8 +256,8 @@ generate_bar_plot <- function(summary_list, title) {
     theme_bar
 }
 
-# Final wrapper function
-module2 <- function(data_inputs, target_code, target_cui, sample_labels) {
+# Final wrapper function (module 2)
+plot_target_prevalence <- function(data_inputs, target_code, target_cui, sample_labels) {
   
   # Total sample sizes
   sample_sizes <- lapply(names(data_inputs), function(name) {
@@ -556,8 +556,8 @@ plot_total_patients_v2 <- function(data_list, phecode_pattern, dictionary, sampl
 
 
 
-# Final wrapper function
-module3 <- function(data_inputs, dictionary, sample_labels, phecodes, custom_children = NULL) {
+# Final wrapper function (module 3)
+analyze_code_hierarchy <- function(data_inputs, dictionary, sample_labels, phecodes, custom_children = NULL) {
   # Prepare codified data list using sample_labels
   codified_data_list <- list()
   if (!is.null(data_inputs$codified1)) codified_data_list[["1"]] <- data_inputs$codified1
@@ -718,8 +718,8 @@ plot_target_code_correlation <- function(wide_data, target_code, target_cui, sum
     scale_x_continuous(breaks = unique(as.numeric(summary_data$year)))
 }
 
-# Final wrapper function
-module4 <- function(data_inputs, target_code, target_cui, dictionary, sample_labels) {
+# Final wrapper function (module 4)
+code_cui_alignment <- function(data_inputs, target_code, target_cui, dictionary, sample_labels) {
   
   # Build codified and NLP lists from sample labels
   codified_list <- list()
@@ -935,8 +935,8 @@ plot_related_code_trends_v2 <- function(Type, target_code, target_cui, codified_
   return(list(list(plot_rates, combined_plot), NULL))
 }
 
-# Final wrapper function
-module5 <- function(data_inputs, target_code, target_cui, sample_labels,
+# Final wrapper function (module 5)
+plot_related_features <- function(data_inputs, target_code, target_cui, sample_labels,
                     O2 = FALSE,
                     manual_ONCE_path_code = NULL,
                     manual_ONCE_path_nlp = NULL,

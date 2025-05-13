@@ -189,7 +189,7 @@ This module summarizes overall patient counts across the input datasets and visu
 ```{r module2}
 
 # Generate module 2 results
-results_module2 <- module2(data_inputs, target_code, target_cui, sample_labels)
+results_module2 <- plot_target_prevalence(data_inputs, target_code, target_cui, sample_labels)
 
 # Display summary table
 knitr::kable(results_module2$sample_sizes, caption = "Total Sample Sizes")
@@ -229,7 +229,7 @@ For each parent Phecode:
 
 # Example 1: Generate module 3 results (use default child codes based on decimal hierarchy)
 
-results_module3 <- module3(data_inputs, dictionary, sample_labels,
+results_module3 <- analyze_code_hierarchy(data_inputs, dictionary, sample_labels,
                            phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"),
                            custom_children = NULL)
 
@@ -247,7 +247,7 @@ custom_children <- list(
   "PheCode:296" = c("PheCode:296.1", "PheCode:296.2", "PheCode:296.22")
 )
 
-results_module3 <- module3(data_inputs, dictionary, sample_labels,
+results_module3 <- analyze_code_hierarchy(data_inputs, dictionary, sample_labels,
                            phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"),
                            custom_children = custom_children)
 
@@ -286,7 +286,7 @@ This module focuses on a specific target phenotype, using both its Phecode (stru
 ```{r module4}
 
 # Generate module 4 results
-results_module4 <- module4(data_inputs, target_code, target_cui, dictionary, sample_labels)
+results_module4 <- code_cui_alignment(data_inputs, target_code, target_cui, dictionary, sample_labels)
 
 # Print plots
 print(results_module4$rates_plot)
@@ -302,6 +302,8 @@ print(results_module4$correlation_plot)
 ## Module 5: ONCE Feature Trends 
 
 This module identifies the top five ONCE-derived features most similar to a user-specified target phenotype (based on ONCE similarity scores) across multiple clinical domains, including diagnoses, medications, labs, procedures, and CUIs. For each domain, the module generates annual trend plots showing the rate and count of patients associated with the top related features. It also provides bar plots summarizing total patient counts across all years. These visualizations help evaluate which features are most related to the target concept and whether their temporal trends are consistent and informative. ONCE similarity dictionaries can be loaded automatically from the O2 cluster or specified manually using file paths.
+
+*Note: When downloading the ONCE dictionary from the [ONCE Webapp](https://shiny.parse-health.org/ONCE/), the feature IDs will appear in the `Variable` column with the format `[prefix]:[numeric code]` (e.g., `"PheCode:123"`, `"RXNORM:123"`). These IDs must match the `feature_id` format used in your local codified and NLP datasets to ensure proper alignment. **DO NOT** rename any columns -- keep `Variable`, `Description`, and `target_similarity` exactly as provided, as they will be automatically renamed and standardized by the pipeline.*
 
 #### *Inputs*
 
@@ -328,7 +330,7 @@ For each clinical domain in `types`:
 ```{r module5}
 
 # Generate module 5 results
-results_module5 <- module5(data_inputs, target_code, target_cui, sample_labels, O2,
+results_module5 <- plot_related_features(data_inputs, target_code, target_cui, sample_labels, O2,
                            manual_ONCE_path_code = manual_ONCE_path_code,
                            manual_ONCE_path_nlp = manual_ONCE_path_nlp,
                            types = c("Diagnosis", "Medication", "Lab", "Procedure", "CUI"),
