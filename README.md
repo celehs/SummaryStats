@@ -30,12 +30,149 @@ Load the package in R:
 ```R
 library(SummaryStats)
 ```
-
 ## Module 1: Quality Control Pipelines
 
-### <ins>Key Functions and Parameters<ins> 
+### <ins>Key Functions and Parameters</ins>
 
-### <ins>Usage Examples<ins> 
+#### 1. `clean_dictionary()`
+
+- **Description**: Prepares a code-to-description mapping from a user-provided dictionary CSV. Cleans and deduplicates descriptions for consistency.
+- **Parameters**:
+  - `dictionary_path`: File path to the data dictionary.
+- **Output**: A cleaned data dictionary with two columns: `feature_id` and `description`.
+
+#### 2. `clean_ONCE_data()`
+
+- **Description**: Loads ONCE-generated codified and NLP feature dictionaries based on a target phenotype. Used in Module 5 but initialized here for consistency.
+- **Parameters**:
+  - `target_code`: The codified feature ID of interest (e.g., `"PheCode:335"`).
+  - `O2`: Logical flag for whether the script is running on O2 (default: `TRUE`).
+  - `path_code`, `path_nlp`: (Optional) Manual file paths for ONCE codified and NLP CSVs if not using O2.
+- **Output**: A list of two data frames: one for codified (`code`) and one for NLP (`nlp`), each including feature similarity scores.
+
+#### 3. `plot_target_prevalence()`
+
+- **Description**: Visualizes the annual trends and overall patient counts for a selected target code and CUI. Returns combined line and bar plots for both NLP and codified features.
+- **Parameters**:
+  - `data_inputs`: A named list of cleaned codified and NLP datasets from `clean_data()`.
+  - `target_code`: The codified feature ID of interest (e.g., `"PheCode:335"`).
+  - `target_cui`: The NLP-derived concept ID of interest (e.g., `"C0026769"`).
+  - `sample_labels`: A named list labeling each sample (e.g., `"1"` = "Site A", `"2"` = "Site B").
+- **Output**: A list containing three elements: `sample_sizes` (summary table), `nlp_plot` (CUI trends), and `codified_plot` (code trends).
+
+#### 4. `analyze_code_hierarchy()`
+
+- **Description**: Evaluates hierarchical consistency for selected Phecodes by comparing trends for parent and child codes. Supports automatic or user-defined child relationships.
+- **Parameters**:
+  - `data_inputs`: A named list of cleaned codified datasets.
+  - `dictionary`: Cleaned feature dictionary.
+  - `sample_labels`: A named list labeling each sample.
+  - `phecodes`: A character vector of parent Phecodes to analyze.
+  - `custom_children`: (Optional) Named list specifying child codes for each parent.
+- **Output**: A list of plots for each parent Phecode, including `rate_plot` (line chart of prevalence) and `combined_plot` (line + bar charts of patient counts).
+
+#### 5. `code_cui_alignment()`
+
+- **Description**: Analyzes agreement between a codified code and its corresponding CUI over time. Produces prevalence trends, patient count plots, and intra-patient correlation metrics.
+- **Parameters**:
+  - `data_inputs`: Cleaned codified and NLP datasets from Module 1.
+  - `target_code`: The Phecode of interest.
+  - `target_cui`: The CUI of interest.
+  - `dictionary`: Cleaned feature dictionary.
+  - `sample_labels`: A named list labeling the samples.
+- **Output**: A list with three plots: `rates_plot`, `counts_plot`, and `correlation_plot`, each comparing trends and alignment across samples.
+
+#### 6. `plot_related_features()`
+
+- **Description**: Identifies and visualizes trends for ONCE-derived features most similar to the target code and CUI, across multiple domains (e.g., diagnoses, labs, medications).
+- **Parameters**:
+  - `data_inputs`: Cleaned codified and NLP datasets from Module 1.
+  - `target_code`: Target Phecode.
+  - `target_cui`: Target CUI.
+  - `sample_labels`: A named list labeling each sample.
+  - `O2`: Logical flag for whether ONCE dictionaries are loaded from the O2 cluster.
+  - `manual_ONCE_path_code`: File path to the ONCE codified dictionary (if `O2 = FALSE`).
+  - `manual_ONCE_path_nlp`: File path to the ONCE NLP dictionary (if `O2 = FALSE`).
+  - `types`: Character vector of clinical domains to evaluate (e.g., `"Diagnosis"`, `"Lab"`).
+  - `type_dict`: A named list mapping domains to one or more feature prefixes.
+- **Output**: A list of plot objects for each domain, including rate and count line plots and total patient bar plots for the most related features.
+
+### <ins>Usage Examples</ins>
+
+Below are example outputs from each module of the QC pipeline, generated using data from a single institution. Each function visualizes trends in codified or NLP-derived clinical features and supports quality control through interpretable plots.
+
+#### **Visualizing target feature prevalence over time with `plot_target_prevalence()`**
+
+```r
+# Generate module 2 results
+results_module2 <- plot_target_prevalence(data_inputs, target_code, target_cui, sample_labels)
+
+# Display plots
+print(results_module2$nlp_plot)
+print(results_module2$codified_plot)
+```
+
+**NLP Plot:**
+
+![](https://github.com/user-attachments/assets/f71ee965-0431-4704-b0e2-9ac08da11786)
+
+**Codified Plot:**
+
+![](https://github.com/user-attachments/assets/d40b939a-182e-4c9b-a03e-30750041c969)
+
+#### **Evaluating parent-child code consistency with `analyze_code_hierarchy()`**
+
+```r
+# Generate module 3 results 
+results_module3 <- analyze_code_hierarchy(data_inputs, dictionary, sample_labels,
+                           phecodes = c("PheCode:411"),
+                           custom_children = NULL)
+
+# Display plots
+for (res in results_module3) {
+  print(res$rate_plot)
+  print(res$combined_plot)
+}
+
+```
+
+![](https://github.com/user-attachments/assets/4c09b6ea-3beb-41e9-b806-c06082790b6a)
+
+---
+
+#### **Comparing temporal alignment between codified and NLP data with `code_cui_alignment()`**
+
+```r
+# Generate module 4 results
+results_module4 <- code_cui_alignment(data_inputs, target_code, target_cui, dictionary, sample_labels)
+
+# Print plots
+print(results_module4$rates_plot)
+```
+
+![](https://github.com/user-attachments/assets/297be072-196d-43da-8c8f-7babf4fceacd)
+
+
+#### **Exploring ONCE-derived related features with `plot_related_features()`**
+
+```r
+# Generate module 5 results
+results_module5 <- plot_related_features(data_inputs, target_code, target_cui, sample_labels, O2,
+                           manual_ONCE_path_code = manual_ONCE_path_code,
+                           manual_ONCE_path_nlp = manual_ONCE_path_nlp,
+                           types = c("Diagnosis"),
+                           type_dict = list("Diagnosis" = "PheCode"))
+
+# Print plots
+for (res in results_module5) {
+  if (!is.null(res$line_plot)) print(res$line_plot)
+  if (!is.null(res$combined_plot)) print(res$combined_plot)
+}
+```
+
+![](https://github.com/user-attachments/assets/4e619caa-5aa9-470e-b51f-3acdf567df56)
+
+
 
 ## Module 2: Main Summary & Code-over-Time Function
 
