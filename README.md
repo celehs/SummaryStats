@@ -138,7 +138,6 @@ for (res in results_module3) {
 
 ![](https://github.com/user-attachments/assets/4c09b6ea-3beb-41e9-b806-c06082790b6a)
 
----
 
 #### **Comparing temporal alignment between codified and NLP data with `code_cui_alignment()`**
 
