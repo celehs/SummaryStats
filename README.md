@@ -99,7 +99,7 @@ library(SummaryStats)
 
 ### <ins>Usage Examples</ins>
 
-Below are example outputs from each module of the QC pipeline, generated using data from a single institution. Each function visualizes trends in codified or NLP-derived clinical features and supports quality control through interpretable plots.
+Below are example outputs from each module of the QC pipeline, generated using data from a single institution with multiple sclerosis as the target feature. Each function visualizes trends in codified and/or NLP-derived clinical features and supports quality control through interpretable plots.
 
 #### **Visualizing target feature prevalence over time with `plot_target_prevalence()`**
 
