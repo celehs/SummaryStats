@@ -28,7 +28,8 @@ Imports:
     gridExtra,
     knitr,
     lubridate,
-    purrr
+    purrr,
+    rlang
 Depends:
     R (>= 3.5.0)
 Suggests:
