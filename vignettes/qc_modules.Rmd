@@ -1,0 +1,361 @@
+---
+title: "EHR Data QC Pipeline"
+author: "Kimberly Greco"
+date: "`r Sys.Date()`"
+output:
+  html_vignette: default
+  pdf_document: default
+vignette: >
+  %\VignetteIndexEntry{EHR Data QC Pipeline} 
+  %\VignetteEncoding{UTF-8} 
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+## -- Overview --
+
+The purpose of this R Markdown demonstration is to streamline quality control (QC) and descriptive analysis for electronic health record (EHR) data, ensuring that clinical data is consistent, complete, and reliable before use in downstream modeling or inference tasks. The pipeline is organized into a series of modules, each generating tables and figures to help identify potential data quality issues -- such as missing data, inconsistent coding, or incorrect code rollups. 
+
+The modules are organized as follows:
+
+- **Module 1**: Data and dictionary pre-processing
+- **Module 2**: Target code and CUI prevalence
+- **Module 3**: Trends for selected phenotypes
+- **Module 4**: Trends and correlation for target code-CUI pair
+- **Module 5**: ONCE feature trends (e.g., diagnoses, medications, labs, procedures)
+
+Once **Module 1** (data preparation) is complete, **Modules 2-5** can be run independently, in any order.
+
+---
+
+## -- Requirements --
+
+This pipeline supports the analysis of codified and natural language processing (NLP) features from one or two samples (e.g., cohorts, institutions). You will define a target codified code (Phecode) and an NLP feature (CUI) to serve as the focal point of the QC process. Since the goal is quality control (not predictive modeling), we recommend running the pipeline on a random subset of your EHR dataset (e.g., 5,000 patients) to streamline processing and accelerate review.
+
+For each sample, you must provide the following:
+
+1. A codified dataset
+2. An NLP dataset
+3. A data dictionary describing all codified and NLP features
+
+To run **Module 5**, you will also need a feature similarity dictionary from the ONCE webapp. Details for each required file type are below.
+
+### *Codified \& NLP Data*
+
+For each sample, you must provide two files: a codified dataset and an NLP dataset. Both files should contain the following columns:
+
+- `patient_num`: Unique patient identifier
+- `feature_id`: Code representing a diagnosis, medication, lab, etc.
+- `start_date`: Date the feature occurred (in `YYYY-MM-DD` or `YYYY` format)
+
+Below is an example of a correctly formatted codified dataset:
+
+| `patient_num`| `feature_id`     | `start_date`|
+|--------------|------------------|-------------|
+| Patient1     | RXNORM:75917     | 2020-10-23  |
+| Patient1     | PheCode:411.9    | 2021-11-23  |
+| Patient2     | PheCode:250.2    | 2015-10-10  |
+
+### *Data Dictionary*
+
+You must also provide a data dictionary that maps each `feature_id` to a human-readable description. This dictionary should include the following columns:
+
+- `feature_id` Code used in the NLP or codified dataset  
+- `description` Plain-text description of the corresponding feature
+
+Below is an example of a correctly formatted data dictionary:
+
+| `feature_id`   | `description`     |
+|----------------|-------------------|
+| PheCode:250    | diabetes mellitus |
+| PheCode:250.1  | type 1 diabetes   |
+| PheCode:250.2  | type 2 diabetes   |
+
+### *ONCE Integration* 
+
+To run **Module 5**, you must provide a ONCE-derived feature similarity dictionary. This identifies the most relevant features (e.g., diagnoses, labs, medications) based on similarity to your selected target code and CUI. If you are not running this script on the O2 cluster, you will need to manually download these files from the ONCE webapp:
+
+1. Access the tool here: [ONCE Webapp](https://shiny.parse-health.org/ONCE/)
+2. Specify your search item (e.g., "Multiple Sclerosis")
+3. Download "Full Results" for NLP and codified features 
+4. Provide manual file paths to:
+    - ONCE codified dictionary
+    - ONCE NLP dictionary
+
+---
+
+## -- Setup --
+
+Before running the script:
+
+1. Download or clone the following two files into the same working directory:
+   - This R Markdown script (QC report)
+   - `Helper_Functions_[date].R` (contains all helper functions used by each module)
+
+2. Open the R Markdown file and define the following below:
+   - File paths to the codified and NLP datasets
+   - File path to your data dictionary
+   - The **target Phecode** (`target_code`) and **target CUI** (`target_cui`) you are analyzing
+
+
+
+
+```{r module0, include=FALSE}
+
+# rm(list = ls())
+
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE, fig.width = 20, fig.height = 8)
+
+# Load SummaryStats library
+library(SummaryStats)
+ls("package:SummaryStats")
+
+# ----------------------- USER INPUT -----------------------
+
+# Provide target code and CUI
+target_code <- "PheCode:335"
+target_cui <- "C0026769"
+
+# Dictionary path
+dictionary_path <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_dict.csv"
+
+# Data paths
+paths <- list()
+sample_labels <- list()
+
+  # Sample 1 (required)
+  paths$nlp1 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_nlp.csv"
+  paths$codified1 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_codified.csv"
+  sample_labels[["1"]] <- "Site A" 
+  
+  # Sample 2 (optional)
+  paths$nlp2 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_nlp_v2.csv"
+  paths$codified2 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_codified_v2.csv"
+  sample_labels[["2"]] <- "Site B" 
+
+# ----------------------- ONCE INTEGRATION (MODULE 5 ONLY) -----------------------
+  
+# If running this script on O2, set to TRUE (otherwise FALSE)
+O2 <- FALSE
+
+# Manual ONCE paths (if O2 = FALSE)
+manual_ONCE_path_code <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/ONCE_multiple_sclerosis_codified.csv"
+manual_ONCE_path_nlp <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/ONCE_multiple_sclerosis_nlp.csv"
+
+```
+
+---
+
+## Module 1: Data and Dictionary Pre-processing
+
+This module loads and cleans the raw input datasets for downstream analysis. It processes codified and NLP-derived clinical data, and imports a user-defined data dictionary. All datasets are standardized into a consistent format, ensuring compatibility with later modules. **Module 1 must be run first**, as it produces the foundational inputs required throughout the pipeline.
+
+#### *Inputs*
+
+1. `paths`: A named list of file paths to raw data CSV files
+    a. `paths$codified1`, `paths$nlp1` (required) – Sample 1
+    b. `paths$codified2`, `paths$nlp2` (optional) – Sample 2
+2. `dictionary_path`: Path to a CSV file containing the raw data dictionary
+
+#### *Outputs*
+
+1. `data_inputs`: A list of cleaned codified and NLP datasets
+2. `dictionary`: A cleaned data dictionary with standardized feature identifiers and descriptions
+
+```{r module1}
+
+# Load and clean raw data
+data_inputs <- clean_data(paths)
+
+  # Preview (optional)
+  # data_inputs$codified1
+  # data_inputs$nlp1
+  # data_inputs$codified2
+  # data_inputs$nlp2
+
+# Load and clean dictionary
+dictionary <- clean_dictionary(dictionary_path)
+
+```
+
+---
+
+## Module 2: Target Code and CUI Prevalence
+
+This module summarizes overall patient counts across the input datasets and visualizes trends over time. It calculates total sample sizes for each dataset (NLP and codified), then generates longitudinal plots showing how the number of patients and the presence of a target concept (CUI or code) varies by year. Both summary tables and comparison plots are produced, supporting either single-sample or two-sample analyses.
+
+#### *Inputs*
+
+1. `data_inputs`: Cleaned codified and NLP datasets from Module 1
+2. `target_code`: A single codified feature of interest (e.g., "PheCode:335")
+3. `target_cui`: A single CUI of interest (e.g., "C0026769")
+4. `sample_labels`: A named list labeling the samples (e.g., list("1" = "Site A", "2" = "Site B"))
+
+#### *Outputs*
+
+1. `sample_sizes`: A summary table showing total patient counts by sample and data type
+2. `nlp_plot`: A combined line-and-bar plot visualizing annual CUI trends
+3. `codified_plot`: A combined line-and-bar plot visualizing annual codified code trends
+
+---
+
+```{r module2}
+
+# Generate module 2 results
+results_module2 <- plot_target_prevalence(data_inputs, target_code, target_cui, sample_labels)
+
+# Display summary table
+knitr::kable(results_module2$sample_sizes, caption = "Total Sample Sizes")
+
+# Display plots
+print(results_module2$nlp_plot)
+print(results_module2$codified_plot)
+
+```
+
+---
+
+## Module 3: Trends for Selected Phenotypes (Parent-Child Correlations)
+
+This module analyzes codified feature trends for a set of parent Phecodes, examining whether their associated child Phecodes follow similar temporal patterns across datasets. By default, it automatically includes first-level child codes (e.g., PheCode:250.1, PheCode:250.2), excluding deeper levels like PheCode:250.11. Alternatively, users may supply an explicit list of child codes via the `custom_children` argument to customize the hierarchy being evaluated. For each Phecode, the module calculates annual patient counts, prevalence rates, and total counts across all years, and visualizes these trends across datasets. Inconsistencies in child-parent trajectories may indicate mapping or extraction issues in the source data.
+
+We recommend starting with Phecodes 411 (Ischemic Heart Disease), 250 (Diabetes Mellitus), and 296 (Mood Disorders) -- common conditions with well-defined hierarchical structures. When defining a custom hierarchy, it may be helpful to consult this [Phecode Map](https://phewascatalog.org/phewas/#phe12) to identify relevant parent-child relationships.
+
+#### *Inputs*
+
+1. `data_inputs`: Cleaned codified and NLP datasets from Module 1
+2. `dictionary`: Cleaned feature dictionary from Module 1 
+3. `sample_labels`: A named list labeling the samples (e.g., list("1" = "Site A", "2" = "Site B"))
+4. `phecodes`: A character vector of parent Phecodes to analyze (e.g., c("PheCode:411", "PheCode:250"))
+5. `custom_children`: (Optional) A named list of child codes to include for each parent (e.g., list("PheCode:411" = c("PheCode:411.1", "PheCode:411.2")))
+
+#### *Outputs*
+
+For each parent Phecode:
+
+1. `rate_plot`: A line plot showing annual prevalence rates for the parent and its child Phecodes across samples
+2. `combined_plot`: A side-by-side plot showing annual patient counts (line plot) and total patient counts across all years (bar plot) for the parent and child Phecodes
+
+---
+
+```{r module3}
+
+# Example 1: Generate module 3 results (use default child codes based on decimal hierarchy)
+
+results_module3 <- analyze_code_hierarchy(data_inputs, dictionary, sample_labels,
+                           phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"),
+                           custom_children = NULL)
+
+# Display plots
+for (res in results_module3) {
+  print(res$rate_plot)
+  print(res$combined_plot)
+}
+
+# Example 2: Generate module 3 results (define custom child codes)
+
+custom_children <- list(
+  "PheCode:411" = c("PheCode:411.1", "PheCode:411.2", "PheCode:411.3"),
+  "PheCode:250" = c("PheCode:250.1", "PheCode:250.11", "PheCode:250.2", "PheCode:250.3"),
+  "PheCode:296" = c("PheCode:296.1", "PheCode:296.2", "PheCode:296.22")
+)
+
+results_module3 <- analyze_code_hierarchy(data_inputs, dictionary, sample_labels,
+                           phecodes = c("PheCode:411", "PheCode:250", "PheCode:296"),
+                           custom_children = custom_children)
+
+# Display plots
+for (res in results_module3) {
+  print(res$rate_plot)
+  print(res$combined_plot)
+}
+
+```
+
+*Notes: (1) Rates are calculated as the number of patients with the target Phecode per calendar year divided by the total number of patients with any code in the same year.*
+
+---
+
+## Module 4: Trends and Correlation for Target Phecode-CUI Pair
+
+This module focuses on a specific target phenotype, using both its Phecode (structured data) and CUI (unstructured NLP-derived data) representations to assess their alignment across time and across samples. It calculates annual prevalence rates and patient counts for each representation and visualizes those trends using line plots. To further assess consistency, it computes a Spearman correlation between the Phecode and CUI features on a per-year basis, quantifying how often they co-occur within the same patients. This helps identify whether codified and NLP-derived features are capturing the same underlying clinical signal.
+
+#### *Inputs*
+
+1. `data_inputs`: Cleaned codified and NLP datasets from Module 1
+2. `target_code`: The target Phecode of interest (e.g., "PheCode:335")
+3. `target_cui`: The target CUI of interest (e.g., "C0026769")
+4. `dictionary`: Cleaned feature dictionary from Module 1
+5. `sample_labels`: A named list labeling the samples (e.g., list("1" = "Site A", "2" = "Site B"))
+
+#### *Outputs*
+
+1. `rates_plot`: A line plot of annual prevalence rates for the target code and CUI across samples
+2. `counts_plot`: A line plot of annual patient counts for the target code and CUI across samples
+3. `correlation_plot`: A line plot of Spearman correlations between the code and CUI across years, reflecting co-occurrence at the patient level
+
+---
+
+```{r module4}
+
+# Generate module 4 results
+results_module4 <- code_cui_alignment(data_inputs, target_code, target_cui, dictionary, sample_labels)
+
+# Print plots
+print(results_module4$rates_plot)
+print(results_module4$counts_plot)
+print(results_module4$correlation_plot)
+
+```
+
+*Notes: (1) Rates are calculated as the number of patients with the target code per calendar year divided by the total number of patients with any code in the same year; (2) Intra-patient correlations are calculated as the Spearman correlation between the code counts for patients in the same year, for years with at least 5 observations.*
+
+---
+
+## Module 5: ONCE Feature Trends 
+
+This module identifies the top five ONCE-derived features most similar to a user-specified target phenotype (based on ONCE similarity scores) across multiple clinical domains, including diagnoses, medications, labs, procedures, and CUIs. For each domain, the module generates annual trend plots showing the rate and count of patients associated with the top related features. It also provides bar plots summarizing total patient counts across all years. These visualizations help evaluate which features are most related to the target concept and whether their temporal trends are consistent and informative. ONCE similarity dictionaries can be loaded automatically from the O2 cluster or specified manually using file paths.
+
+*Note: When downloading the ONCE dictionary from the [ONCE Webapp](https://shiny.parse-health.org/ONCE/), the feature IDs will appear in the `Variable` column with the format `[prefix]:[numeric code]` (e.g., `"PheCode:123"`, `"RXNORM:123"`). These IDs must match the `feature_id` format used in your local codified and NLP datasets to ensure proper alignment. **DO NOT** rename any columns -- keep `Variable`, `Description`, and `target_similarity` exactly as provided, as they will be automatically renamed and standardized by the pipeline.*
+
+#### *Inputs*
+
+1. `data_inputs`: Cleaned codified and NLP datasets from Module 1
+2. `target_code`: The target Phecode of interest (e.g., "PheCode:335")
+3. `target_cui`: The target CUI of interest (e.g., "C0026769")
+4. `sample_labels`: A named list labeling the samples (e.g., list("1" = "Site A", "2" = "Site B"))
+5. `O2`: Logical flag indicating whether to load ONCE data from the shared O2 directory (TRUE) or from user-provided paths (FALSE)
+6. `manual_ONCE_path_code`: File path to the codified ONCE dictionary (used if `O2` = FALSE)
+7. `manual_ONCE_path_nlp`: File path to the NLP ONCE dictionary (used if `O2` = FALSE)
+8. `types`: A vector of clinical domains to evaluate (e.g., c("Diagnosis", "Medication", "Lab", "Procedure", "CUI"))
+9. `type_dict`: A named list mapping each domain to one or more feature prefixes
+(e.g., "Diagnosis" = "PheCode", "Lab" = c("LOINC", "ShortName", "Other Lab"))
+
+#### *Outputs*
+
+For each clinical domain in `types`: 
+
+1. `line_plot`: A line plot of annual rates for the target feature and top 5 related features
+2. `combined_plot`: A side-by-side plot combining a line plot of annual patient counts and a bar plot of total patient counts across all years
+
+---
+
+```{r module5}
+
+# Generate module 5 results
+results_module5 <- plot_related_features(data_inputs, target_code, target_cui, sample_labels, O2,
+                           manual_ONCE_path_code = manual_ONCE_path_code,
+                           manual_ONCE_path_nlp = manual_ONCE_path_nlp,
+                           types = c("Diagnosis", "Medication", "Lab", "Procedure", "CUI"),
+                           type_dict = list("Diagnosis" = "PheCode", 
+                                            "Medication" = "RXNORM", 
+                                            "Lab" = c("LOINC","ShortName","Other Lab"), 
+                                            "Procedure" = "CCS"))
+
+# Display plots
+for (res in results_module5) {
+  if (!is.null(res$line_plot)) print(res$line_plot)
+  if (!is.null(res$combined_plot)) print(res$combined_plot)
+}
+
+```
+
