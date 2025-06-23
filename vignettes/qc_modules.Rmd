@@ -96,50 +96,47 @@ Before running the script:
    - File path to your data dictionary
    - The **target Phecode** (`target_code`) and **target CUI** (`target_cui`) you are analyzing
 
-
-
-
 ```{r module0, include=FALSE}
 
 # rm(list = ls())
 
+# Set knitr options
 knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE, fig.width = 20, fig.height = 8)
 
-# Load SummaryStats library
+# Load the package
 library(SummaryStats)
-ls("package:SummaryStats")
 
 # ----------------------- USER INPUT -----------------------
 
-# Provide target code and CUI
+# Define target phenotype
 target_code <- "PheCode:335"
 target_cui <- "C0026769"
 
-# Dictionary path
-dictionary_path <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_dict.csv"
+# Dictionary path (portable!)
+dictionary_path <- system.file("extdata", "fake_dict.csv", package = "SummaryStats")
 
-# Data paths
-paths <- list()
-sample_labels <- list()
+# Data paths (portable!)
+paths <- list(
+  nlp1      = system.file("extdata", "fake_nlp.csv", package = "SummaryStats"),
+  codified1 = system.file("extdata", "fake_codified.csv", package = "SummaryStats"),
+  nlp2      = system.file("extdata", "fake_nlp_v2.csv", package = "SummaryStats"),
+  codified2 = system.file("extdata", "fake_codified_v2.csv", package = "SummaryStats")
+)
 
-  # Sample 1 (required)
-  paths$nlp1 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_nlp.csv"
-  paths$codified1 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_codified.csv"
-  sample_labels[["1"]] <- "Site A" 
-  
-  # Sample 2 (optional)
-  paths$nlp2 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_nlp_v2.csv"
-  paths$codified2 <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/fake_codified_v2.csv"
-  sample_labels[["2"]] <- "Site B" 
+# Sample labels
+sample_labels <- list(
+  "1" = "Site A",
+  "2" = "Site B"
+)
 
 # ----------------------- ONCE INTEGRATION (MODULE 5 ONLY) -----------------------
-  
-# If running this script on O2, set to TRUE (otherwise FALSE)
+
+# If running on O2, set this to TRUE (for auto path resolution)
 O2 <- FALSE
 
-# Manual ONCE paths (if O2 = FALSE)
-manual_ONCE_path_code <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/ONCE_multiple_sclerosis_codified.csv"
-manual_ONCE_path_nlp <- "/Users/kimberlygreco/Dropbox/CELEHS/SummaryStats/inst/extdata/ONCE_multiple_sclerosis_nlp.csv"
+# Manual ONCE file paths (portable!)
+manual_ONCE_path_code <- system.file("extdata", "ONCE_multiple_sclerosis_codified.csv", package = "SummaryStats")
+manual_ONCE_path_nlp  <- system.file("extdata", "ONCE_multiple_sclerosis_nlp.csv", package = "SummaryStats")
 
 ```
 
