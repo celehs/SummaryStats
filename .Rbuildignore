@@ -9,3 +9,4 @@ README.md
 ^.*\.Rproj$
 ^\.Rproj\.user$
 inst/ONCE_features
+^shiny-server$
