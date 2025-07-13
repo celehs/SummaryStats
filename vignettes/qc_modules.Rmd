@@ -57,7 +57,7 @@ Below is an example of a correctly formatted codified dataset:
 
 ### *Data Dictionary*
 
-You must also provide a data dictionary that maps each `feature_id` to a human-readable description. This dictionary should include the following columns:
+You must also provide a data dictionary that maps each `feature_id` to a plain-text description. This dictionary should include the following columns:
 
 - `feature_id` Code used in the NLP or codified dataset  
 - `description` Plain-text description of the corresponding feature
@@ -69,6 +69,57 @@ Below is an example of a correctly formatted data dictionary:
 | PheCode:250    | diabetes mellitus |
 | PheCode:250.1  | type 1 diabetes   |
 | PheCode:250.2  | type 2 diabetes   |
+
+If your dataset uses different column names or includes extra information, you can easily convert it to the correct format using the helper function below:
+
+```{R}
+
+create_data_dictionary <- function(data, feature_col, description_col) {
+  # Check if specified columns exist
+  if (!all(c(feature_col, description_col) %in% colnames(data))) {
+    stop("Specified columns not found in the input dataset.")
+  }
+
+  # Subset and rename columns
+  dictionary <- data[, c(feature_col, description_col)]
+  colnames(dictionary) <- c("feature_id", "description")
+
+  # Coerce to character to ensure proper formatting
+  dictionary$feature_id <- as.character(dictionary$feature_id)
+  dictionary$description <- as.character(dictionary$description)
+
+  # Remove duplicates and rows with missing values
+  dictionary <- unique(na.omit(dictionary))
+
+  return(dictionary)
+}
+
+```
+
+Here is an example of how to use the function to return a clean data dictionary in the required format:
+
+```{R}
+
+# Sample input with different column names and extra metadata
+raw_data <- data.frame(
+  code = c("PheCode:250", "PheCode:250.1", "PheCode:250.2", "C0011849", "C0011880"),
+  desc = c("diabetes mellitus", "type 1 diabetes", "type 2 diabetes", "diabetes mellitus", "diabetic ketoacidosis"),
+  other_info = 1:5
+)
+
+# Create a cleaned and formatted dictionary
+formatted_dict <- create_data_dictionary(
+  data = raw_data,
+  feature_col = "code",
+  description_col = "desc"
+)
+
+# View the output
+print(formatted_dict)
+
+```
+
+*Note: The `feature_id` values do not need to follow a specific format -- unless you are using **Module 5**. In that case, you’ll also need to provide a named list that maps each domain (e.g., "Diagnosis") to one or more feature prefixes (e.g., "PheCode") (see **Module 5** for details). For all other modules, as long as the `feature_id` values in your dictionary match those used in your codified and/or NLP data, you’re good to go.*
 
 ### *ONCE Integration* 
 
